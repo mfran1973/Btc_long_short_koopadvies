@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="BTC Margin">
+<meta name="theme-color" content="#070b08">
+<title>BTC Margin Terminal</title>
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    min-height: 100vh;
+    min-height: 100dvh;
+    background: #070b08;
+    color: #c9e6d3;
+    font-family: ui-monospace, SFMono-Regular, "JetBrains Mono", "Courier New", monospace;
+    padding: 16px 12px 32px;
+    padding-top: max(16px, env(safe-area-inset-top));
+    padding-bottom: max(32px, env(safe-area-inset-bottom));
+    padding-left: max(12px, env(safe-area-inset-left));
+    padding-right: max(12px, env(safe-area-inset-right));
+  }
+  .wrap { max-width: 960px; margin: 0 auto; }
+  .panel { border: 1px solid #1e3327; margin-bottom: 12px; }
+  .header { padding: 10px 14px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; }
+  .ticker-label { color: #ffb000; font-size: 12px; letter-spacing: 2px; }
+  .price { font-size: 22px; font-weight: 700; }
+  .cursor { color: #33ff99; margin-left: 6px; }
+  .meta { font-size: 10.5px; color: #5a7a63; }
+  .intervals { display: flex; gap: 6px; margin: 0 0 10px; flex-wrap: wrap; }
+  button {
+    background: transparent; color: #5a7a63; border: 1px solid #1e3327;
+    padding: 9px 14px; font-family: inherit; font-size: 13px; cursor: pointer; min-height: 38px;
+  }
+  button.active { background: #153322; color: #33ff99; }
+  button.primary { color: #c9e6d3; border-color: #2c4a38; }
+  button.long { color: #33ff99; border-color: #1f5c3a; }
+  button.short { color: #ff6b6b; border-color: #5c1f1f; }
+  .error { border: 1px solid #ff4d4d; color: #ff4d4d; padding: 12px; font-size: 12px; margin-bottom: 10px; display: none; }
+  .badge { padding: 18px 14px; text-align: center; background: #0c130e; }
+  .badge-label { font-size: 10.5px; color: #5a7a63; letter-spacing: 3px; margin-bottom: 6px; }
+  .badge-signal { font-size: 28px; font-weight: 800; letter-spacing: 1px; line-height: 1.2; }
+  .badge-sub { font-size: 12px; margin-top: 8px; color: #c9e6d3; line-height: 1.5; }
+  .badge-add { font-size: 11px; margin-top: 6px; color: #5a7a63; }
+  .section { padding: 14px; font-size: 12px; line-height: 1.7; }
+  .label { color: #5a7a63; letter-spacing: 2px; margin-bottom: 8px; font-size: 11px; }
+  table.tf { width: 100%; border-collapse: collapse; font-size: 13px; }
+  table.tf td, table.tf th { padding: 6px 4px; text-align: left; border-bottom: 1px solid #13221a; }
+  table.tf th { color: #5a7a63; font-weight: 400; font-size: 11px; }
+  .k { color: #33ff99; } .v { color: #ff4d4d; } .n { color: #ffb000; }
+  .warn { color: #ff4d4d; }
+  .muted { color: #5a7a63; }
+  .formgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
+  .formgrid label { font-size: 11px; color: #5a7a63; display: flex; flex-direction: column; gap: 4px; }
+  input[type=number], select {
+    background: #0c130e; color: #c9e6d3; border: 1px solid #1e3327; width: 100%;
+    padding: 8px 10px; font-family: inherit; font-size: 16px; min-height: 38px; border-radius: 0;
+  }
+  .btnrow { margin-top: 10px; display: flex; gap: 8px; flex-wrap: wrap; }
+  .scroll { overflow-x: auto; }
+  #grid { display: grid; grid-template-columns: 70px repeat(9, minmax(26px, 1fr)); gap: 2px; font-size: 11px; min-width: 330px; }
+  #grid div { display: flex; align-items: center; justify-content: center; min-height: 28px; }
+  #grid .hd { color: #5a7a63; }
+  #grid .me { outline: 2px solid #ffffff; outline-offset: -2px; }
+  .legend { font-size: 10.5px; color: #5a7a63; display: flex; gap: 12px; margin-top: 8px; flex-wrap: wrap; }
+  .chartbox { padding: 8px; }
+  svg { display: block; width: 100%; height: auto; }
+  .entrygrid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .entry { border: 1px solid #1e3327; padding: 10px; }
+  .entry h3 { margin: 0 0 4px; font-size: 13px; letter-spacing: 2px; }
+  .entry .st { font-weight: 700; font-size: 14px; margin-bottom: 6px; }
+  .entry .ck { font-size: 11.5px; line-height: 1.6; }
+  .entry .sg { font-size: 11px; color: #5a7a63; margin-top: 6px; }
+  @media (max-width: 480px) { .entrygrid { grid-template-columns: 1fr; } }
+  .disclaimer { font-size: 10px; color: #3f5b48; margin-top: 16px; line-height: 1.6; }
+  @media (max-width: 480px) {
+    body { padding-left: max(8px, env(safe-area-inset-left)); padding-right: max(8px, env(safe-area-inset-right)); }
+    .price { font-size: 19px; }
+    .badge-signal { font-size: 23px; }
+    .intervals button { flex: 1 1 auto; text-align: center; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="panel header">
+    <div style="display:flex; align-items:baseline;">
+      <span class="ticker-label">BTC/EUR · MARGIN</span>
+      <span class="price" id="price" style="margin-left:10px;">----</span>
+      <span class="cursor" id="cursor">█</span>
+    </div>
+    <div class="meta" id="meta">verbinden...</div>
+  </div>
+
+  <div class="error" id="error"></div>
+
+  <div class="panel badge" id="badge">
+    <div class="badge-label" id="badgeLabel">ADVIES</div>
+    <div class="badge-signal" id="advice" style="color:#ffb000;">LADEN...</div>
+    <div class="badge-sub" id="adviceSub"></div>
+    <div class="badge-add" id="adviceAdd"></div>
+  </div>
+
+  <div class="panel section">
+    <div class="label">INSTAP-CHECK · LONG EN SHORT</div>
+    <div id="entryNote" class="muted" style="margin-bottom:8px;"></div>
+    <div class="entrygrid" id="entryGrid"><div class="muted">laden...</div></div>
+  </div>
+
+  <div class="panel section">
+    <div class="label">SIGNALEN PER TIMEFRAME</div>
+    <table class="tf">
+      <thead><tr><th>TF</th><th>Signaal</th><th>Trend</th><th>RSI</th></tr></thead>
+      <tbody id="tfBody"><tr><td colspan="4" class="muted">laden...</td></tr></tbody>
+    </table>
+  </div>
+
+  <div class="panel section">
+    <div class="label">JOUW POSITIE</div>
+    <div id="posBody"></div>
+    <div class="btnrow" id="posActions"></div>
+    <div id="posForm"></div>
+  </div>
+
+  <div class="panel section">
+    <div class="label" id="matrixLabel">BESLISMATRIX</div>
+    <div class="intervals" id="matrixToggle"></div>
+    <div class="scroll"><div id="grid"></div></div>
+    <div class="legend" id="matrixLegend"></div>
+  </div>
+
+  <div class="intervals" id="intervals">
+    <button data-iv="15m">15m</button>
+    <button data-iv="1h" class="active">1u</button>
+    <button data-iv="4h">4u</button>
+    <button data-iv="1d">1d</button>
+    <button id="refreshBtn">↻ ververs</button>
+  </div>
+
+  <div class="panel chartbox">
+    <svg id="chart" viewBox="0 0 900 320" width="100%"></svg>
+    <div class="legend">
+      <span style="color:#ffb000;">── EMA9</span>
+      <span style="color:#7fb3ff;">── EMA21</span>
+      <span style="color:#ff6b6b;">- - stop</span>
+      <span style="color:#c9e6d3;">- - instap</span>
+      <span id="rsiLabel">RSI(14): -</span>
+    </div>
+    <svg id="volumeChart" viewBox="0 0 900 70" width="100%" style="margin-top:8px;"></svg>
+    <div class="legend"><span>Volume · stippellijn = 20-candle gemiddelde</span></div>
+  </div>
+
+  <div class="panel section">
+    <div class="label" id="reasonLabel">REDENERING</div>
+    <div id="reasons"></div>
+  </div>
+
+  <div class="disclaimer">
+    Puur technisch (EMA9/EMA21-kruising in de laatste 3 gesloten candles + RSI14 + volume, per timeframe bevestigd door de hogere timeframe; de lopende candle telt niet mee),
+    gecombineerd met je eigen beslismatrix. De liquidatieprijs is een grove schatting zonder onderhoudsmarge,
+    fees en funding; de echte liquidatie ligt dichter bij je instap. Kijk altijd op je exchange.
+    Geen financieel advies. Margin vergroot winst én verlies; je kunt je hele inleg verliezen.
+  </div>
+
+</div>
+
+<script>
+const IVS = ["15m", "1h", "4h", "1d"];
+const KRAKEN_MINUTES = { "15m": 15, "1h": 60, "4h": 240, "1d": 1440 };
+const IV_LABEL = { "15m": "15M", "1h": "1U", "4h": "4U", "1d": "1D" };
+const PARENT = { "15m": "1h", "1h": "4h", "4h": "1d", "1d": null };
+const POS_KEY = "btc_margin_position";
+const COIN = { binance: "BTCEUR", kraken: "XBTEUR" };
+
+let state = {
+  data: {}, source: null, lastUpdate: null,
+  chartIv: "1h", pos: loadPos(), formOpen: false, matrixView: "long", timer: null
+};
+
+function fmt(n) { return n.toLocaleString("nl-NL", { maximumFractionDigits: 0 }); }
+function pct(n) { return (n >= 0 ? "+" : "") + n.toFixed(2) + "%"; }
+
+/* ---------- positie ---------- */
+function loadPos() {
+  try { const r = localStorage.getItem(POS_KEY); return r ? JSON.parse(r) : null; } catch (e) { return null; }
+}
+function storePos(p) {
+  try { if (p) localStorage.setItem(POS_KEY, JSON.stringify(p)); else localStorage.removeItem(POS_KEY); } catch (e) {}
+  state.pos = p;
+}
+function quickOpen(side) {
+  const price = currentPrice();
+  if (!price) return;
+  const ss = suggestStop(side);
+  storePos({ side, entry: price, stop: ss ? Math.round(ss) : null, lev: 1, date: new Date().toISOString() });
+  state.formOpen = true; // direct stop invullen
+  render();
+}
+function closePos() {
+  if (!confirm("Positie als gesloten markeren?")) return;
+  storePos(null); state.formOpen = false; render();
+}
+function toggleForm() { state.formOpen = !state.formOpen; render(); }
+function saveForm() {
+  const side = document.getElementById("fSide").value;
+  const entry = parseFloat(document.getElementById("fEntry").value);
+  const stopRaw = parseFloat(document.getElementById("fStop").value);
+  const lev = parseFloat(document.getElementById("fLev").value) || 1;
+  if (!entry || entry <= 0) { alert("Vul een geldige instapprijs in."); return; }
+  const stop = stopRaw > 0 ? stopRaw : null;
+  if (stop && side === "long" && stop >= entry) { alert("Bij een long ligt de stop onder je instapprijs."); return; }
+  if (stop && side === "short" && stop <= entry) { alert("Bij een short ligt de stop boven je instapprijs."); return; }
+  const prev = state.pos;
+  storePos({ side, entry, stop, lev, date: prev ? prev.date : new Date().toISOString() });
+  state.formOpen = false; render();
+}
+function liqPrice(p) {
+  if (!p || !p.lev || p.lev <= 1) return null;
+  return p.side === "long" ? p.entry * (1 - 1 / p.lev) : p.entry * (1 + 1 / p.lev);
+}
+
+/* ---------- indicatoren ---------- */
+function calcEMA(values, period) {
+  const k = 2 / (period + 1), ema = [];
+  values.forEach((v, i) => ema.push(i === 0 ? v : v * k + ema[i - 1] * (1 - k)));
+  return ema;
+}
+function calcRSI(values, period = 14) {
+  const rsi = new Array(values.length).fill(null);
+  if (values.length <= period) return rsi;
+  let gains = 0, losses = 0;
+  for (let i = 1; i <= period; i++) { const d = values[i] - values[i - 1]; if (d >= 0) gains += d; else losses -= d; }
+  let ag = gains / period, al = losses / period;
+  rsi[period] = 100 - 100 / (1 + (al === 0 ? 100 : ag / al));
+  for (let i = period + 1; i < values.length; i++) {
+    const d = values[i] - values[i - 1];
+    ag = (ag * (period - 1) + (d > 0 ? d : 0)) / period;
+    al = (al * (period - 1) + (d < 0 ? -d : 0)) / period;
+    rsi[i] = 100 - 100 / (1 + (al === 0 ? 100 : ag / al));
+  }
+  return rsi;
+}
+
+/* ---------- data ---------- */
+async function fetchFromBinance(iv) {
+  const res = await fetch(`https://api.binance.com/api/v3/klines?symbol=${COIN.binance}&interval=${iv}&limit=120`);
+  if (!res.ok) throw new Error(`Binance HTTP ${res.status}`);
+  const raw = await res.json();
+  if (!Array.isArray(raw) || !raw.length) throw new Error("Binance: lege response");
+  return raw.map(k => ({ time: k[0], open: +k[1], high: +k[2], low: +k[3], close: +k[4], volume: +k[5] }));
+}
+async function fetchFromKraken(iv) {
+  const res = await fetch(`https://api.kraken.com/0/public/OHLC?pair=${COIN.kraken}&interval=${KRAKEN_MINUTES[iv]}`);
+  if (!res.ok) throw new Error(`Kraken HTTP ${res.status}`);
+  const data = await res.json();
+  if (data.error && data.error.length) throw new Error("Kraken: " + data.error.join("; "));
+  const key = Object.keys(data.result || {}).find(k => k !== "last");
+  if (!key) throw new Error("Kraken: geen candle-data");
+  return data.result[key].slice(-120).map(k => ({ time: k[0] * 1000, open: +k[1], high: +k[2], low: +k[3], close: +k[4], volume: +k[6] }));
+}
+async function fetchOHLC(iv) {
+  const errs = [];
+  try { return { candles: await fetchFromBinance(iv), source: "Binance" }; } catch (e) { errs.push(e.message); }
+  try { return { candles: await fetchFromKraken(iv), source: "Kraken" }; } catch (e) { errs.push(e.message); }
+  throw new Error(errs.join(" | "));
+}
+async function fetchAll() {
+  document.getElementById("error").style.display = "none";
+  const results = await Promise.allSettled(IVS.map(iv => fetchOHLC(iv)));
+  const failed = [];
+  results.forEach((r, i) => {
+    if (r.status === "fulfilled") { state.data[IVS[i]] = r.value.candles; state.source = r.value.source; }
+    else failed.push(IV_LABEL[IVS[i]]);
+  });
+  if (failed.length) {
+    const el = document.getElementById("error");
+    el.style.display = "block";
+    el.textContent = `Kon geen live candles ophalen voor ${failed.join(", ")} bij Binance of Kraken. De matrix is pas betrouwbaar als alle vier de timeframes geladen zijn. Check je verbinding of tik op ververs.`;
+  }
+  if (failed.length < IVS.length) state.lastUpdate = new Date();
+  render();
+}
+
+/* ---------- signaal per timeframe ---------- */
+const LOOKBACK = 3; // kruising mag maximaal zoveel gesloten candles geleden zijn
+function computeSignal(candles) {
+  if (!candles || candles.length <= 27) return null;
+  // alleen GESLOTEN candles: de laatste candle loopt nog en geeft flikkerende signalen en te laag volume
+  const cc = candles.slice(0, -1);
+  const closes = cc.map(c => c.close);
+  const ema9 = calcEMA(closes, 9), ema21 = calcEMA(closes, 21), rsi = calcRSI(closes, 14);
+  const n = closes.length - 1, lastRSI = rsi[n];
+  const diff = i => ema9[i] - ema21[i];
+  const trendUp = diff(n) > 0;
+  let ago = null, dir = null;
+  for (let k = 0; k < LOOKBACK; k++) {
+    const i = n - k; if (i < 1) break;
+    if (diff(i - 1) <= 0 && diff(i) > 0) { ago = k; dir = "up"; break; }
+    if (diff(i - 1) >= 0 && diff(i) < 0) { ago = k; dir = "dn"; break; }
+  }
+  const vols = cc.map(c => c.volume || 0);
+  const reasons = [];
+  let signal = "N";
+  const agoTxt = ago === 0 ? "op de laatste gesloten candle" : `${ago + 1} candles geleden`;
+  if (dir) {
+    const ci = n - ago;
+    const win = vols.slice(Math.max(0, ci - 20), ci);
+    const avg = win.length ? win.reduce((a, b) => a + b, 0) / win.length : 0;
+    const peak = Math.max(...vols.slice(ci, n + 1));
+    const volOk = avg > 0 ? peak > avg * 1.1 : true;
+    const volTxt = avg > 0 ? `${(peak / avg).toFixed(1)}x het 20-candle gemiddelde` : "onbekend";
+    const up = dir === "up";
+    reasons.push(`EMA9 kruiste ${up ? "opwaarts" : "neerwaarts"} door EMA21 ${agoTxt}`);
+    if (up !== trendUp) reasons.push("Kruising is alweer teruggedraaid — genegeerd");
+    else if (up && lastRSI >= 70) reasons.push(`RSI(14) = ${lastRSI.toFixed(1)} — overbought, geen koopsignaal`);
+    else if (!up && lastRSI <= 30) reasons.push(`RSI(14) = ${lastRSI.toFixed(1)} — oversold, geen verkoopsignaal`);
+    else if (!volOk) reasons.push(`Volume bevestigt niet (${volTxt})`);
+    else {
+      signal = up ? "K" : "V";
+      reasons.push(`RSI(14) = ${lastRSI.toFixed(1)} — ruimte ${up ? "naar boven" : "naar beneden"}`);
+      reasons.push(`Volume bevestigt (${volTxt})`);
+    }
+  } else {
+    reasons.push(`Geen EMA9/EMA21-kruising in de laatste ${LOOKBACK} gesloten candles`);
+    reasons.push(`RSI(14) = ${lastRSI.toFixed(1)}`);
+  }
+  reasons.push(trendUp ? "Trend: EMA9 boven EMA21 (opwaarts)" : "Trend: EMA9 onder EMA21 (neerwaarts)");
+  return { signal, reasons, rsi: lastRSI, trend: trendUp ? "up" : "dn" };
+}
+function analyze(iv) {
+  const r = computeSignal(state.data[iv]);
+  if (!r) return null;
+  const p = PARENT[iv];
+  if (!p || r.signal === "N") return r;
+  const pc = state.data[p];
+  if (!pc || pc.length < 25) { r.reasons.push(`Hogere timeframe (${IV_LABEL[p]}) niet beschikbaar — bevestiging overgeslagen`); return r; }
+  const cl = pc.slice(0, -1).map(c => c.close), e9 = calcEMA(cl, 9), e21 = calcEMA(cl, 21), np = cl.length - 1;
+  const pUp = e9[np] > e21[np];
+  if (r.signal === "K" && !pUp) { r.reasons.push(`Onderdrukt: trend op ${IV_LABEL[p]} is nog niet opwaarts`); r.signal = "N"; }
+  else if (r.signal === "V" && pUp) { r.reasons.push(`Onderdrukt: trend op ${IV_LABEL[p]} is nog niet neerwaarts`); r.signal = "N"; }
+  else r.reasons.push(`Bevestigd door hogere timeframe ${IV_LABEL[p]}`);
+  return r;
+}
+function currentPrice() {
+  const c = state.data["15m"] || state.data["1h"];
+  return c && c.length ? c[c.length - 1].close : 0;
+}
+
+/* ---------- beslismatrix ---------- */
+const S = ["K", "N", "V"];
+const FLIP = { K: "V", N: "N", V: "K" };
+const TFLIP = { up: "dn", dn: "up" };
+function baseLong(m15, h1, h4, d1) {
+  if (h1 === "V") return (h4 === "K" && d1 !== "V") ? "P" : "X";
+  if (h4 === "V" && d1 === "V") return h1 === "N" ? "P" : "T";
+  if (h4 === "V" || d1 === "V") return "T";
+  if (m15 === "V") return "W";
+  return "H";
+}
+function actLong(m15, h1, h4, d1, t) {
+  const b = baseLong(m15, h1, h4, d1);
+  if (b !== "H" && b !== "W") return b;
+  const a = t.h1 === "dn", c = t.h4 === "dn", d = t.d1 === "dn";
+  if ((a && c) || (c && d)) return "T";
+  if (a || c || d) return "W";
+  return b;
+}
+function act(side, m15, h1, h4, d1, t) {
+  if (side === "long") return actLong(m15, h1, h4, d1, t);
+  return actLong(FLIP[m15], FLIP[h1], FLIP[h4], FLIP[d1], { h1: TFLIP[t.h1], h4: TFLIP[t.h4], d1: TFLIP[t.d1] });
+}
+const CODES = {
+  H: { c: "H", col: "#33ff99", bg: "#10301d" },
+  W: { c: "H!", col: "#33ff99", bg: "#10301d" },
+  T: { c: "S", col: "#ffb000", bg: "#33280a" },
+  P: { c: "½", col: "#ff9a4d", bg: "#3a1f0c" },
+  X: { c: "X", col: "#ff4d4d", bg: "#3a1010" }
+};
+const TEXT = {
+  long: {
+    H: ["LONG VASTHOUDEN", "Niets doen, positie aanhouden."],
+    W: ["LONG VASTHOUDEN", "Nog geen actie, maar kijk vaker."],
+    T: ["STOP OMHOOG", "Zet je stop dichter onder de huidige koers."],
+    P: ["HELFT SLUITEN", "Verkoop de helft van je long, stop omhoog voor de rest."],
+    X: ["LONG SLUITEN", "Sluit de hele positie."]
+  },
+  short: {
+    H: ["SHORT VASTHOUDEN", "Niets doen, positie aanhouden."],
+    W: ["SHORT VASTHOUDEN", "Nog geen actie, maar kijk vaker."],
+    T: ["STOP OMLAAG", "Zet je stop dichter boven de huidige koers."],
+    P: ["HELFT SLUITEN", "Koop de helft van je short terug, stop omlaag voor de rest."],
+    X: ["SHORT SLUITEN", "Koop de hele positie terug."]
+  }
+};
+function addAllowed(side, sig, t) {
+  if (side === "long") return sig["1h"] === "K" && sig["4h"] !== "V" && sig["1d"] !== "V" && t.d1 === "up";
+  return sig["1h"] === "V" && sig["4h"] !== "K" && sig["1d"] !== "K" && t.d1 === "dn";
+}
+
+function suggestStop(side) {
+  const c = state.data["1h"];
+  if (!c || c.length < 14) return null;
+  const last = c.slice(-13, -1);
+  return side === "long" ? Math.min(...last.map(x => x.low)) * 0.998 : Math.max(...last.map(x => x.high)) * 1.002;
+}
+function entryCheck(side, res, t) {
+  const L = side === "long", want = L ? "K" : "V", against = L ? "V" : "K", tw = L ? "up" : "dn";
+  const W = { K: "KOPEN", V: "VERKOPEN" };
+  const checks = [
+    [`1h-signaal ${W[want]}`, res["1h"].signal === want],
+    [`4h niet op ${W[against]}`, res["4h"].signal !== against],
+    [`1d niet op ${W[against]}`, res["1d"].signal !== against],
+    [`1d-trend ${L ? "opwaarts" : "neerwaarts"}`, t.d1 === tw]
+  ];
+  const ok = checks.every(c => c[1]);
+  const near = !ok && checks.slice(1).every(c => c[1]) && res["1h"].trend === tw;
+  return { ok, near, checks };
+}
+
+/* ---------- render ---------- */
+function setBadge(title, sub, add, color) {
+  const a = document.getElementById("advice");
+  a.textContent = title; a.style.color = color;
+  document.getElementById("adviceSub").textContent = sub || "";
+  document.getElementById("adviceAdd").textContent = add || "";
+  document.getElementById("badge").style.border = `1px solid ${color}`;
+}
+
+function render() {
+  document.getElementById("meta").textContent = state.lastUpdate
+    ? `bron: ${state.source} · update ${state.lastUpdate.toLocaleTimeString("nl-NL")}` : "verbinden...";
+  const price = currentPrice();
+  if (price) document.getElementById("price").textContent = "€" + fmt(price);
+
+  const res = {}; IVS.forEach(iv => res[iv] = analyze(iv));
+  const complete = IVS.every(iv => res[iv]);
+  const sig = {}, t = {};
+  IVS.forEach(iv => { if (res[iv]) { sig[iv] = res[iv].signal; t[iv === "15m" ? "m15" : iv] = res[iv].trend; } });
+  const trends = { h1: t["1h"], h4: t["4h"], d1: t["1d"] };
+
+  // tabel per timeframe
+  const SIGTXT = { K: "KOPEN", N: "NIETS", V: "VERKOPEN" };
+  document.getElementById("tfBody").innerHTML = IVS.map(iv => {
+    const r = res[iv];
+    if (!r) return `<tr><td>${IV_LABEL[iv]}</td><td colspan="3" class="muted">geen data</td></tr>`;
+    return `<tr><td>${IV_LABEL[iv]}</td><td class="${r.signal.toLowerCase()}">${SIGTXT[r.signal]}</td>
+      <td class="${r.trend === "up" ? "k" : "v"}">${r.trend === "up" ? "▲ op" : "▼ neer"}</td>
+      <td>${r.rsi != null ? r.rsi.toFixed(0) : "-"}</td></tr>`;
+  }).join("");
+
+  renderPosition(price);
+
+  // advies
+  const pos = state.pos;
+  const label = document.getElementById("badgeLabel");
+  if (!complete) {
+    label.textContent = "ADVIES";
+    setBadge("WACHTEN OP DATA", "Nog niet alle vier de timeframes geladen.", "", "#5a7a63");
+  } else if (pos) {
+    label.textContent = pos.side === "long" ? "ADVIES · OPEN LONG" : "ADVIES · OPEN SHORT";
+    const stopHit = pos.stop && price && (pos.side === "long" ? price <= pos.stop : price >= pos.stop);
+    if (stopHit) {
+      setBadge("STOP GERAAKT", `Koers €${fmt(price)} is voorbij je stop van €${fmt(pos.stop)}. Sluit de positie, wat de matrix ook zegt.`, "", "#ff4d4d");
+    } else {
+      const code = act(pos.side, sig["15m"], sig["1h"], sig["4h"], sig["1d"], trends);
+      const [title, sub] = TEXT[pos.side][code];
+      const add = addAllowed(pos.side, sig, trends)
+        ? (pos.side === "long" ? "Bijkopen toegestaan (max. helft eerste positie)." : "Bijshorten toegestaan (max. helft eerste positie).")
+        : (pos.side === "long" ? "Niet bijkopen." : "Niet bijshorten.");
+      const noStop = pos.stop ? "" : " · Let op: je hebt nog geen stop ingesteld.";
+      setBadge(title, sub + noStop, add, CODES[code].col);
+    }
+  } else {
+    label.textContent = "ADVIES · GEEN POSITIE";
+    const eL = entryCheck("long", res, trends), eS = entryCheck("short", res, trends);
+    const sL = suggestStop("long"), sS = suggestStop("short");
+    if (eL.ok) setBadge("LONG MOGELIJK", `Alle voorwaarden voor long zijn groen.${sL ? ` Stop-suggestie €${fmt(sL)}.` : ""}`, "Koopadvies geldt voor LONG (inzetten op stijging).", "#33ff99");
+    else if (eS.ok) setBadge("SHORT MOGELIJK", `Alle voorwaarden voor short zijn groen.${sS ? ` Stop-suggestie €${fmt(sS)}.` : ""}`, "Advies geldt voor SHORT (inzetten op daling).", "#ff4d4d");
+    else if (eL.near) setBadge("NOG NIET · LONG IN AANLOOP", "4h en 1d staan goed en de 1h-trend is opwaarts, maar er is nog geen bevestigd 1h-koopsignaal.", "Wachten.", "#ffb000");
+    else if (eS.near) setBadge("NOG NIET · SHORT IN AANLOOP", "4h en 1d staan goed en de 1h-trend is neerwaarts, maar er is nog geen bevestigd 1h-verkoopsignaal.", "Wachten.", "#ffb000");
+    else setBadge("NIETS DOEN", "Geen instap in welke richting dan ook: de timeframes spreken elkaar tegen of geven geen signaal.", "", "#5a7a63");
+  }
+  renderEntry(complete, res, trends, price);
+
+  // matrix
+  const view = pos ? pos.side : state.matrixView;
+  document.getElementById("matrixLabel").textContent = view === "long" ? "BESLISMATRIX · LONG" : "BESLISMATRIX · SHORT";
+  document.getElementById("matrixToggle").innerHTML = pos ? "" :
+    `<button class="${view === "long" ? "active" : ""}" onclick="setView('long')">Long-matrix</button>
+     <button class="${view === "short" ? "active" : ""}" onclick="setView('short')">Short-matrix</button>`;
+  if (complete) renderGrid(view, sig, trends);
+
+  // grafiek + redenering
+  const cr = res[state.chartIv];
+  document.getElementById("reasonLabel").textContent = `REDENERING · ${IV_LABEL[state.chartIv]}`;
+  if (cr) {
+    document.getElementById("rsiLabel").textContent = `RSI(14): ${cr.rsi.toFixed(1)}`;
+    document.getElementById("reasons").innerHTML = cr.reasons.map(r => `<div>› ${r}</div>`).join("");
+    const fc = state.data[state.chartIv].map(c => c.close);
+    document.getElementById("chart").innerHTML = renderChart(state.data[state.chartIv], calcEMA(fc, 9), calcEMA(fc, 21));
+    document.getElementById("volumeChart").innerHTML = renderVolumeChart(state.data[state.chartIv]);
+  }
+}
+function renderEntry(complete, res, t, price) {
+  const grid = document.getElementById("entryGrid"), note = document.getElementById("entryNote");
+  if (!complete) { grid.innerHTML = `<div class="muted">Wachten op alle vier de timeframes.</div>`; note.textContent = ""; return; }
+  note.textContent = state.pos ? `Je hebt al een ${state.pos.side}. Ter informatie; open niet tegelijk de andere richting.` : "Beide richtingen worden steeds apart getoetst.";
+  grid.innerHTML = ["long", "short"].map(side => {
+    const e = entryCheck(side, res, t), col = side === "long" ? "#33ff99" : "#ff4d4d";
+    const st = e.ok ? ["INSTAP MOGELIJK", col] : e.near ? ["IN AANLOOP", "#ffb000"] : ["GEEN INSTAP", "#5a7a63"];
+    const ss = suggestStop(side);
+    const sg = ss && price ? `Stop-suggestie €${fmt(ss)} (${(Math.abs(price - ss) / price * 100).toFixed(1)}% van de koers, voorbij het 1h-${side === "long" ? "dal" : "top"} van de laatste 12 uur)` : "";
+    return `<div class="entry" style="border-color:${e.ok ? col : "#1e3327"}">
+      <h3 style="color:${col}">${side === "long" ? "▲ LONG" : "▼ SHORT"}</h3>
+      <div class="st" style="color:${st[1]}">${st[0]}</div>
+      <div class="ck">${e.checks.map(c => `<div class="${c[1] ? "k" : "muted"}">${c[1] ? "✓" : "✗"} ${c[0]}</div>`).join("")}</div>
+      <div class="sg">${sg}</div></div>`;
+  }).join("");
+}
+function setView(v) { state.matrixView = v; render(); }
+
+function renderPosition(price) {
+  const p = state.pos;
+  const body = document.getElementById("posBody");
+  const actions = document.getElementById("posActions");
+  const form = document.getElementById("posForm");
+  if (p) {
+    const dir = p.side === "long" ? 1 : -1;
+    const move = price ? dir * (price - p.entry) / p.entry * 100 : 0;
+    const liq = liqPrice(p);
+    let html = `<div><span class="${p.side === "long" ? "k" : "v"}">${p.side.toUpperCase()}</span> · ${p.lev}x · instap €${fmt(p.entry)} (${new Date(p.date).toLocaleDateString("nl-NL")})</div>`;
+    if (price) html += `<div>Resultaat: <span class="${move >= 0 ? "k" : "v"}">${pct(move * p.lev)}</span> op je inleg <span class="muted">(koers ${pct(move)})</span></div>`;
+    if (p.stop) {
+      const dist = price ? Math.abs(price - p.stop) / price * 100 : 0;
+      const risk = Math.abs(p.entry - p.stop) / p.entry * 100 * p.lev;
+      html += `<div>Stop €${fmt(p.stop)} · ${dist.toFixed(1)}% van de koers · max. verlies ±${risk.toFixed(1)}% van je inleg</div>`;
+    } else html += `<div class="warn">Geen stop ingesteld.</div>`;
+    if (liq) {
+      html += `<div>Liquidatie ±€${fmt(liq)} <span class="muted">(grove schatting)</span></div>`;
+      if (!p.stop) html += `<div class="warn">Met ${p.lev}x hefboom zonder stop riskeer je liquidatie.</div>`;
+      else if ((p.side === "long" && p.stop <= liq * 1.02) || (p.side === "short" && p.stop >= liq * 0.98)) html += `<div class="warn">Je stop ligt (bijna) voorbij de liquidatieprijs. Zet hem dichter bij je instap of verlaag je hefboom.</div>`;
+    }
+    body.innerHTML = html;
+    actions.innerHTML = `<button class="primary" onclick="toggleForm()">${state.formOpen ? "annuleren" : "stop / gegevens aanpassen"}</button>
+      <button onclick="closePos()">✓ Positie gesloten</button>`;
+  } else {
+    body.innerHTML = `<div class="muted">Geen open positie.</div>`;
+    actions.innerHTML = `<button class="long" onclick="quickOpen('long')">✓ Long geopend (nu)</button>
+      <button class="short" onclick="quickOpen('short')">✓ Short geopend (nu)</button>
+      <button onclick="toggleForm()">${state.formOpen ? "annuleren" : "handmatig"}</button>`;
+  }
+  if (state.formOpen) {
+    const q = p || { side: "long", entry: price ? Math.round(price) : "", stop: "", lev: 1 };
+    form.innerHTML = `<div class="formgrid">
+      <label>Richting<select id="fSide"><option value="long" ${q.side === "long" ? "selected" : ""}>Long</option><option value="short" ${q.side === "short" ? "selected" : ""}>Short</option></select></label>
+      <label>Hefboom<input type="number" id="fLev" min="1" step="1" value="${q.lev || 1}"></label>
+      <label>Instapprijs €<input type="number" id="fEntry" step="1" inputmode="decimal" value="${q.entry ? Math.round(q.entry) : ""}"></label>
+      <label>Stop €<input type="number" id="fStop" step="1" inputmode="decimal" value="${q.stop ? Math.round(q.stop) : ""}" placeholder="verplicht aanbevolen"></label>
+      </div>
+      <div class="btnrow"><button class="primary" onclick="saveForm()">Opslaan</button></div>`;
+  } else form.innerHTML = "";
+}
+
+function renderGrid(view, sig, t) {
+  const g = document.getElementById("grid");
+  let h = `<div class="hd">1h →</div>`;
+  S.forEach(x => h += `<div class="hd" style="grid-column:span 3;background:#0c130e;">${x}</div>`);
+  h += `<div class="hd">15m →</div>`;
+  S.forEach(() => S.forEach(m => h += `<div class="hd">${m}</div>`));
+  S.forEach((h4, i) => S.forEach(d1 => {
+    const mt = (d1 === "K" && i > 0) ? "margin-top:4px;" : "";
+    h += `<div class="hd" style="justify-content:flex-start;font-size:10.5px;${mt}">4h ${h4} · 1d ${d1}</div>`;
+    S.forEach(h1 => S.forEach(m => {
+      const c = CODES[act(view, m, h1, h4, d1, t)];
+      const me = m === sig["15m"] && h1 === sig["1h"] && h4 === sig["4h"] && d1 === sig["1d"];
+      h += `<div class="${me ? "me" : ""}" style="background:${c.bg};color:${c.col};font-weight:700;${mt}">${c.c}</div>`;
+    }));
+  }));
+  g.innerHTML = h;
+  const L = TEXT[view];
+  document.getElementById("matrixLegend").innerHTML =
+    `<span>K kopen · N niets · V verkopen · omlijnd = nu · trends live verwerkt</span>` +
+    Object.keys(CODES).map(k => `<span style="color:${CODES[k].col}">${CODES[k].c} ${k === "W" ? "vasthouden, vaker kijken" : L[k][0].toLowerCase()}</span>`).join("");
+}
+
+function renderChart(candles, ema9, ema21) {
+  const vis = candles.slice(-60), e9 = ema9.slice(-60), e21 = ema21.slice(-60);
+  const W = 900, H = 320, padL = 50, padR = 10, padT = 10, padB = 10;
+  if (vis.length < 2) return "";
+  const vals = [...vis.map(c => c.high), ...vis.map(c => c.low), ...e9, ...e21];
+  let max = Math.max(...vals), min = Math.min(...vals);
+  const p = state.pos;
+  const extra = [];
+  if (p) { extra.push([p.entry, "#c9e6d3"]); if (p.stop) extra.push([p.stop, "#ff6b6b"]); }
+  extra.forEach(([v]) => { max = Math.max(max, v); min = Math.min(min, v); });
+  const range = max - min || 1, cw = (W - padL - padR) / vis.length;
+  const y = v => padT + (1 - (v - min) / range) * (H - padT - padB);
+  const x = i => padL + i * cw + cw / 2;
+  const line = arr => arr.map((v, i) => `${i === 0 ? "M" : "L"} ${x(i)} ${y(v)}`).join(" ");
+  let svg = "";
+  vis.forEach((c, i) => {
+    const col = c.close >= c.open ? "#33ff99" : "#ff4d4d", xc = x(i);
+    svg += `<line x1="${xc}" x2="${xc}" y1="${y(c.high)}" y2="${y(c.low)}" stroke="${col}" stroke-width="1"/>`;
+    svg += `<rect x="${xc - cw * 0.32}" y="${Math.min(y(c.open), y(c.close))}" width="${cw * 0.64}" height="${Math.max(1, Math.abs(y(c.open) - y(c.close)))}" fill="${col}"/>`;
+  });
+  svg += `<path d="${line(e9)}" fill="none" stroke="#ffb000" stroke-width="1.3" opacity="0.9"/>`;
+  svg += `<path d="${line(e21)}" fill="none" stroke="#7fb3ff" stroke-width="1.3" opacity="0.9"/>`;
+  extra.forEach(([v, col]) => {
+    svg += `<line x1="${padL}" x2="${W - padR}" y1="${y(v)}" y2="${y(v)}" stroke="${col}" stroke-width="1" stroke-dasharray="6,4"/>`;
+    svg += `<text x="2" y="${y(v) + 4}" fill="${col}" font-size="13" font-family="monospace">${fmt(v / 1000)}k</text>`;
+  });
+  return svg;
+}
+function renderVolumeChart(candles) {
+  const vis = candles.slice(-60);
+  if (vis.length < 2) return "";
+  const W = 900, H = 70, padL = 50, padR = 10;
+  const vols = vis.map(c => c.volume || 0), max = Math.max(...vols) || 1;
+  const avg = vols.reduce((a, b) => a + b, 0) / vols.length, cw = (W - padL - padR) / vis.length;
+  const y = v => H - (v / max) * (H - 6), x = i => padL + i * cw + cw / 2;
+  let svg = "";
+  vis.forEach((c, i) => {
+    const by = y(c.volume || 0);
+    svg += `<rect x="${x(i) - cw * 0.32}" y="${by}" width="${cw * 0.64}" height="${H - by}" fill="${c.close >= c.open ? "#33ff99" : "#ff4d4d"}" opacity="0.55"/>`;
+  });
+  svg += `<line x1="${padL}" x2="${W - padR}" y1="${y(avg)}" y2="${y(avg)}" stroke="#5a7a63" stroke-width="1" stroke-dasharray="4,3"/>`;
+  return svg;
+}
+
+/* ---------- events ---------- */
+document.querySelectorAll("#intervals button[data-iv]").forEach(b => b.addEventListener("click", () => {
+  state.chartIv = b.dataset.iv;
+  document.querySelectorAll("#intervals button[data-iv]").forEach(x => x.classList.toggle("active", x === b));
+  render();
+}));
+document.getElementById("refreshBtn").addEventListener("click", fetchAll);
+setInterval(() => { const c = document.getElementById("cursor"); c.style.opacity = c.style.opacity === "0" ? "1" : "0"; }, 600);
+
+render();
+fetchAll();
+state.timer = setInterval(fetchAll, 60000);
+</script>
+</body>
+</html>
