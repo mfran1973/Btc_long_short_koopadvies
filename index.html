@@ -5,9 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="BTC Margin">
+<meta name="apple-mobile-web-app-title" content="BTC Pro">
 <meta name="theme-color" content="#070b08">
-<title>BTC Margin Terminal</title>
+<title>BTC Pro Terminal</title>
 <style>
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   html { -webkit-text-size-adjust: 100%; }
@@ -76,6 +76,13 @@
   .entry .ck { font-size: 11.5px; line-height: 1.6; }
   .entry .sg { font-size: 11px; color: #5a7a63; margin-top: 6px; }
   @media (max-width: 480px) { .entrygrid { grid-template-columns: 1fr; } }
+  .plangrid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 8px; }
+  .plangrid div { border: 1px solid #13221a; padding: 6px 8px; }
+  .plangrid span { display: block; font-size: 10.5px; color: #5a7a63; }
+  .plangrid b { font-size: 14px; }
+  .risk { display: inline-block; padding: 3px 10px; border: 1px solid; margin: 6px 0 4px; font-weight: 700; letter-spacing: 1px; }
+  .lvrow { display: grid; grid-template-columns: 1fr auto 60px; gap: 8px; padding: 3px 0; border-bottom: 1px solid #13221a; }
+  .lvrow.now { color: #ffb000; font-weight: 700; }
   .disclaimer { font-size: 10px; color: #3f5b48; margin-top: 16px; line-height: 1.6; }
   @media (max-width: 480px) {
     body { padding-left: max(8px, env(safe-area-inset-left)); padding-right: max(8px, env(safe-area-inset-right)); }
@@ -90,7 +97,7 @@
 
   <div class="panel header">
     <div style="display:flex; align-items:baseline;">
-      <span class="ticker-label">BTC/EUR · MARGIN</span>
+      <span class="ticker-label">BTC/EUR · PRO</span>
       <span class="price" id="price" style="margin-left:10px;">----</span>
       <span class="cursor" id="cursor">█</span>
     </div>
@@ -104,6 +111,11 @@
     <div class="badge-signal" id="advice" style="color:#ffb000;">LADEN...</div>
     <div class="badge-sub" id="adviceSub"></div>
     <div class="badge-add" id="adviceAdd"></div>
+  </div>
+
+  <div class="panel section" id="planPanel" style="display:none;">
+    <div class="label" id="planLabel">PLAN</div>
+    <div id="planBody"></div>
   </div>
 
   <div class="panel section">
@@ -149,6 +161,8 @@
       <span style="color:#7fb3ff;">── EMA21</span>
       <span style="color:#ff6b6b;">- - stop</span>
       <span style="color:#c9e6d3;">- - instap</span>
+      <span style="color:#33ff99;">- - doel</span>
+      <span style="color:#7a8f80;">▒ steun/weerstand</span>
       <span id="rsiLabel">RSI(14): -</span>
     </div>
     <svg id="volumeChart" viewBox="0 0 900 70" width="100%" style="margin-top:8px;"></svg>
@@ -160,9 +174,29 @@
     <div id="reasons"></div>
   </div>
 
+  <div class="panel section">
+    <div class="label">STEUN &amp; WEERSTAND · UIT DE CANDLES</div>
+    <div id="levels" class="muted">laden...</div>
+  </div>
+
+  <div class="panel section">
+    <div class="label">SCHADUWLOGBOEK</div>
+    <div class="muted" style="margin-bottom:8px;">Elk instapsignaal wordt vastgelegd en later nagerekend met de echte koers: gevuld of niet, en eerst stop of eerst doel. Signalen die de nieuwe filters tegenhielden worden ook gevolgd, zodat je ziet of die filters helpen.</div>
+    <div id="logBody"></div>
+    <div class="btnrow"><button onclick="clearLog()">logboek wissen</button></div>
+  </div>
+
+  <div class="panel section">
+    <div class="label">INSTELLINGEN</div>
+    <div class="btnrow" style="margin-top:0;"><button class="primary" id="setBtn" onclick="toggleSettings()">instellingen tonen</button></div>
+    <div id="setForm"></div>
+  </div>
+
   <div class="disclaimer">
-    Puur technisch (EMA9/EMA21-kruising in de laatste 3 gesloten candles + RSI14 + volume, per timeframe bevestigd door de hogere timeframe; de lopende candle telt niet mee),
-    gecombineerd met je eigen beslismatrix. De liquidatieprijs is een grove schatting zonder onderhoudsmarge,
+    Twee soorten instap: een terugval naar de 1u-EMA21 of steun binnen een trend op 1u en 4u, bevestigd door een 15m-omslag; en de originele
+    EMA9/EMA21-kruising (in de laatste 3 gesloten candles + RSI14 + volume, per timeframe bevestigd door de hogere timeframe; de lopende candle telt niet mee),
+    gecombineerd met je eigen beslismatrix. Daarbovenop: instaptiming (niet achter een uitgerekte beweging aan), steun en weerstand uit dezelfde candles,
+    winst/risico na Bitvavo-kosten, positiegrootte en een risicolabel. De liquidatieprijs is een grove schatting zonder onderhoudsmarge,
     fees en funding; de echte liquidatie ligt dichter bij je instap. Kijk altijd op je exchange.
     Geen financieel advies. Margin vergroot winst én verlies; je kunt je hele inleg verliezen.
   </div>
@@ -174,12 +208,13 @@ const IVS = ["15m", "1h", "4h", "1d"];
 const KRAKEN_MINUTES = { "15m": 15, "1h": 60, "4h": 240, "1d": 1440 };
 const IV_LABEL = { "15m": "15M", "1h": "1U", "4h": "4U", "1d": "1D" };
 const PARENT = { "15m": "1h", "1h": "4h", "4h": "1d", "1d": null };
-const POS_KEY = "btc_margin_position";
+const POS_KEY = "btc_pro_position";
+const LOG_KEY = "btc_pro_log", SET_KEY = "btc_pro_settings";
 const COIN = { binance: "BTCEUR", kraken: "XBTEUR" };
 
 let state = {
   data: {}, source: null, lastUpdate: null,
-  chartIv: "1h", pos: loadPos(), formOpen: false, matrixView: "long", timer: null
+  chartIv: "1h", pos: loadPos(), formOpen: false, matrixView: "long", timer: null, setOpen: false, plan: null, zones: []
 };
 
 function fmt(n) { return n.toLocaleString("nl-NL", { maximumFractionDigits: 0 }); }
@@ -216,7 +251,7 @@ function saveForm() {
   if (stop && side === "long" && stop >= entry) { alert("Bij een long ligt de stop onder je instapprijs."); return; }
   if (stop && side === "short" && stop <= entry) { alert("Bij een short ligt de stop boven je instapprijs."); return; }
   const prev = state.pos;
-  storePos({ side, entry, stop, lev, date: prev ? prev.date : new Date().toISOString() });
+  storePos({ side, entry, stop, lev, tgt: prev && prev.side === side ? prev.tgt : undefined, size: prev && prev.side === side ? prev.size : undefined, date: prev ? prev.date : new Date().toISOString() });
   state.formOpen = false; render();
 }
 function liqPrice(p) {
@@ -248,7 +283,7 @@ function calcRSI(values, period = 14) {
 
 /* ---------- data ---------- */
 async function fetchFromBinance(iv) {
-  const res = await fetch(`https://api.binance.com/api/v3/klines?symbol=${COIN.binance}&interval=${iv}&limit=120`);
+  const res = await fetch(`https://api.binance.com/api/v3/klines?symbol=${COIN.binance}&interval=${iv}&limit=500`);
   if (!res.ok) throw new Error(`Binance HTTP ${res.status}`);
   const raw = await res.json();
   if (!Array.isArray(raw) || !raw.length) throw new Error("Binance: lege response");
@@ -261,7 +296,7 @@ async function fetchFromKraken(iv) {
   if (data.error && data.error.length) throw new Error("Kraken: " + data.error.join("; "));
   const key = Object.keys(data.result || {}).find(k => k !== "last");
   if (!key) throw new Error("Kraken: geen candle-data");
-  return data.result[key].slice(-120).map(k => ({ time: k[0] * 1000, open: +k[1], high: +k[2], low: +k[3], close: +k[4], volume: +k[6] }));
+  return data.result[key].slice(-500).map(k => ({ time: k[0] * 1000, open: +k[1], high: +k[2], low: +k[3], close: +k[4], volume: +k[6] }));
 }
 async function fetchOHLC(iv) {
   const errs = [];
@@ -305,7 +340,7 @@ function computeSignal(candles) {
   }
   const vols = cc.map(c => c.volume || 0);
   const reasons = [];
-  let signal = "N";
+  let signal = "N", volRatio = null;
   const agoTxt = ago === 0 ? "op de laatste gesloten candle" : `${ago + 1} candles geleden`;
   if (dir) {
     const ci = n - ago;
@@ -313,6 +348,7 @@ function computeSignal(candles) {
     const avg = win.length ? win.reduce((a, b) => a + b, 0) / win.length : 0;
     const peak = Math.max(...vols.slice(ci, n + 1));
     const volOk = avg > 0 ? peak > avg * 1.1 : true;
+    volRatio = avg > 0 ? peak / avg : null;
     const volTxt = avg > 0 ? `${(peak / avg).toFixed(1)}x het 20-candle gemiddelde` : "onbekend";
     const up = dir === "up";
     reasons.push(`EMA9 kruiste ${up ? "opwaarts" : "neerwaarts"} door EMA21 ${agoTxt}`);
@@ -330,7 +366,7 @@ function computeSignal(candles) {
     reasons.push(`RSI(14) = ${lastRSI.toFixed(1)}`);
   }
   reasons.push(trendUp ? "Trend: EMA9 boven EMA21 (opwaarts)" : "Trend: EMA9 onder EMA21 (neerwaarts)");
-  return { signal, reasons, rsi: lastRSI, trend: trendUp ? "up" : "dn" };
+  return { signal, reasons, rsi: lastRSI, trend: trendUp ? "up" : "dn", volRatio };
 }
 function analyze(iv) {
   const r = computeSignal(state.data[iv]);
@@ -422,6 +458,281 @@ function entryCheck(side, res, t) {
   return { ok, near, checks };
 }
 
+/* ========== PRO-uitbreiding: timing, niveaus, plan, risico, logboek ========== */
+const DEF_SET = { capital: 1000, riskPct: 1, maxLev: 3, maker: 0.15, taker: 0.25, borrow: 0.03, minRR: 1.5 };
+function loadSet() { try { return Object.assign({}, DEF_SET, JSON.parse(localStorage.getItem(SET_KEY) || "{}")); } catch (e) { return Object.assign({}, DEF_SET); } }
+let SET = loadSet();
+function closedC(iv) { const c = state.data[iv]; return c && c.length > 1 ? c.slice(0, -1) : null; }
+function calcATR(c, n = 14) {
+  const tr = c.map((x, i) => i === 0 ? x.high - x.low : Math.max(x.high - x.low, Math.abs(x.high - c[i - 1].close), Math.abs(x.low - c[i - 1].close)));
+  let a = tr.slice(0, n).reduce((s, v) => s + v, 0) / n; const out = new Array(c.length).fill(a);
+  for (let i = n; i < c.length; i++) { a = (a * (n - 1) + tr[i]) / n; out[i] = a; }
+  return out;
+}
+function pivots(c, L, R) {
+  const hi = [], lo = [];
+  for (let i = L; i < c.length - R; i++) {
+    let H = true, Lo = true;
+    for (let j = i - L; j <= i + R; j++) { if (j === i) continue; if (c[j].high >= c[i].high) H = false; if (c[j].low <= c[i].low) Lo = false; }
+    if (H) hi.push(c[i].high); if (Lo) lo.push(c[i].low);
+  }
+  return { hi, lo };
+}
+function buildZones(price) {
+  const h1 = closedC("1h"), h4 = closedC("4h"), d1 = closedC("1d");
+  if (!h1 || !h4 || !d1 || h1.length < 30) return [];
+  const atr1 = calcATR(h1).at(-1), raw = [];
+  const p1 = pivots(h1.slice(-300), 4, 4); p1.hi.forEach(p => raw.push([p, 1, "1u-top"])); p1.lo.forEach(p => raw.push([p, 1, "1u-dal"]));
+  const p4 = pivots(h4.slice(-200), 3, 3); p4.hi.forEach(p => raw.push([p, 2, "4u-top"])); p4.lo.forEach(p => raw.push([p, 2, "4u-dal"]));
+  const y = d1[d1.length - 1]; raw.push([y.high, 2, "gisteren hoog"], [y.low, 2, "gisteren laag"]);
+  const now = new Date(), dow = (now.getUTCDay() + 6) % 7;
+  const wk = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()) - dow * 864e5;
+  const pw = d1.filter(c => c.time >= wk - 7 * 864e5 && c.time < wk);
+  if (pw.length) raw.push([Math.max(...pw.map(c => c.high)), 3, "vorige week hoog"], [Math.min(...pw.map(c => c.low)), 3, "vorige week laag"]);
+  for (let r = Math.floor(price * 0.92 / 1000) * 1000; r <= price * 1.08; r += 1000) raw.push([r, 1, "rond getal"]);
+  const tol = Math.max(0.3 * atr1, price * 0.0025), zones = [];
+  raw.filter(x => x[0] > price * 0.88 && x[0] < price * 1.12).sort((a, b) => a[0] - b[0]).forEach(([p, w, src]) => {
+    const z = zones[zones.length - 1];
+    if (z && p - z.hi <= tol) { z.hi = Math.max(z.hi, p); z.w += w; z.srcs.add(src); }
+    else zones.push({ lo: p, hi: p, w, srcs: new Set([src]) });
+  });
+  zones.forEach(z => { if (z.hi - z.lo < tol * 0.4) { z.lo -= tol * 0.2; z.hi += tol * 0.2; } z.mid = (z.lo + z.hi) / 2; z.label = [...z.srcs].join(", "); });
+  return zones;
+}
+function nlNow() {
+  const parts = new Intl.DateTimeFormat("nl-NL", { timeZone: "Europe/Amsterdam", weekday: "short", hour: "numeric", hourCycle: "h23" }).formatToParts(new Date());
+  const g = t => (parts.find(p => p.type === t) || {}).value || "";
+  const hour = parseInt(g("hour"), 10), wd = g("weekday").toLowerCase();
+  return { night: hour >= 1 && hour < 8, weekend: wd.startsWith("za") || wd.startsWith("zo") };
+}
+function pullbackCheck(side, res, t) {
+  const L = side === "long", tw = L ? "up" : "dn", sg = L ? 1 : -1;
+  const h1 = closedC("1h"), m15 = closedC("15m"), out = { ok: false, near: false, checks: [] };
+  if (!h1 || !m15 || h1.length < 30 || m15.length < 30 || !res["1h"] || !res["4h"] || !res["1d"]) return out;
+  const A = calcATR(h1).at(-1), e21 = calcEMA(h1.map(c => c.close), 21), n = h1.length - 1;
+  // terugval: in de laatste 4 gesloten 1u-candles raakte de koers de 1u-EMA21 of een steun/weerstand
+  let touched = false, where = "";
+  for (let i = n - 3; i <= n && !touched; i++) {
+    const c = h1[i], ext = L ? c.low : c.high;
+    if (sg * (ext - e21[i]) <= 0.25 * A) { touched = true; where = "1u-EMA21"; break; }
+    const z = state.zones.find(z => z.w >= 2 && (L ? (z.mid < c.close && ext <= z.hi + 0.25 * A) : (z.mid > c.close && ext >= z.lo - 0.25 * A)));
+    if (z) { touched = true; where = L ? "steun" : "weerstand"; }
+  }
+  const holds = sg * (h1[n].close - e21[n]) > -0.5 * A;
+  // 15m draait mee: EMA9/EMA21-kruising in trendrichting binnen de laatste 6 gesloten 15m-candles
+  const c15 = m15.map(c => c.close), a9 = calcEMA(c15, 9), a21 = calcEMA(c15, 21), m = c15.length - 1;
+  let turned = false;
+  for (let k = 0; k < 6; k++) { const i = m - k; if (i < 1) break; if (sg * (a9[i - 1] - a21[i - 1]) <= 0 && sg * (a9[i] - a21[i]) > 0) { turned = true; break; } }
+  const nowOk = sg * (a9[m] - a21[m]) > 0, r1 = res["1h"].rsi, rsiOk = r1 == null || (L ? r1 < 70 : r1 > 30);
+  out.checks = [
+    [`1u-trend ${L ? "opwaarts" : "neerwaarts"}`, res["1h"].trend === tw],
+    [`4u-trend ${L ? "opwaarts" : "neerwaarts"}`, res["4h"].trend === tw],
+    [`1d niet op ${L ? "VERKOPEN" : "KOPEN"}`, res["1d"].signal !== (L ? "V" : "K")],
+    [`Terugval naar ${where || "1u-EMA21 of " + (L ? "steun" : "weerstand")}`, touched && holds],
+    [`15m draait ${L ? "omhoog" : "omlaag"} (EMA9/21)`, turned && nowOk],
+    [`RSI 1u niet ${L ? "overbought" : "oversold"}`, rsiOk]
+  ];
+  const base = out.checks.slice(0, 3).every(c => c[1]) && rsiOk;
+  out.ok = base && touched && holds && turned && nowOk;
+  out.near = !out.ok && base && touched && holds;
+  return out;
+}
+function fullCheck(side, res, t) {
+  const x = entryCheck(side, res, t), p = pullbackCheck(side, res, t);
+  const kind = p.ok ? "terugval" : x.ok ? "kruising" : null;
+  return { ok: !!kind, kind, nearPb: !kind && p.near, nearX: !kind && x.near, near: !kind && (p.near || x.near), x, p };
+}
+function makePlan(side, res, t, price, kind) {
+  const h1 = closedC("1h"), m15 = closedC("15m"), d1 = closedC("1d");
+  if (!h1 || !m15 || !price) return null;
+  const L = side === "long", sg = L ? 1 : -1;
+  const A = calcATR(h1).at(-1), A15 = calcATR(m15).at(-1);
+  const e21 = calcEMA(h1.map(c => c.close), 21).at(-1);
+  const l15 = m15[m15.length - 1];
+  const stretched = sg * (price - e21) > 0.6 * A || (l15.high - l15.low) > 2 * A15;
+  const p = { side, stretched, e21, A };
+  p.limit = stretched;
+  p.entry = stretched ? e21 + sg * 0.25 * A : price;
+  p.kind = kind || "kruising";
+  let stop;
+  if (p.kind === "terugval") { const last = h1.slice(-4); stop = L ? Math.min(...last.map(c => c.low)) - 0.2 * A : Math.max(...last.map(c => c.high)) + 0.2 * A; }
+  else stop = suggestStop(side) || p.entry - sg * A;
+  if (sg * (p.entry - stop) < 0.5 * A) stop = p.entry - sg * 0.5 * A;
+  p.stop = stop;
+  const dist = Math.abs(p.entry - stop);
+  if (dist > 3 * A) p.blocked = "Stop zou te ver weg moeten liggen (meer dan 3× de gemiddelde 1u-beweging)";
+  const opp = state.zones.filter(z => z.w >= 3 && (L ? z.lo > p.entry + 0.3 * dist : z.hi < p.entry - 0.3 * dist))
+    .sort((a, b) => L ? a.lo - b.lo : b.hi - a.hi);
+  const edge = z => L ? z.lo - 0.1 * A : z.hi + 0.1 * A;
+  p.t1 = opp[0] ? edge(opp[0]) : p.entry + sg * 2 * dist;
+  p.t2 = opp[1] ? edge(opp[1]) : p.entry + sg * Math.max(3 * dist, Math.abs(p.t1 - p.entry) + dist);
+  p.t1Label = opp[0] ? opp[0].label : "geen niveau, 2× risico";
+  const fm = SET.maker / 100, ft = SET.taker / 100, bo = SET.borrow / 100;
+  p.stopPct = dist / p.entry;
+  const costWin = 2 * fm + bo, riskPct = p.stopPct + fm + ft + bo;
+  const rr = tg => (Math.abs(tg - p.entry) / p.entry - costWin) / riskPct;
+  p.rr1 = rr(p.t1); p.rr2 = rr(p.t2); p.main = 1;
+  if (p.rr1 < SET.minRR) { if (p.rr2 >= SET.minRR + 0.5) p.main = 2; else if (!p.blocked) p.blocked = `Te weinig ruimte tot de volgende ${L ? "weerstand" : "steun"} (€${fmt(p.t1)}): winst/risico na kosten maar ${p.rr1.toFixed(1).replace(".", ",")}`; }
+  p.rr = p.main === 1 ? p.rr1 : p.rr2; p.tgt = p.main === 1 ? p.t1 : p.t2;
+  let size = SET.capital * SET.riskPct / 100 / riskPct, lev = Math.max(1, Math.ceil(size / (SET.capital * 0.95)));
+  p.capped = false;
+  if (lev > SET.maxLev) { lev = SET.maxLev; size = SET.capital * 0.95 * lev; p.capped = true; }
+  p.size = size; p.lev = lev; p.margin = size / lev; p.riskEur = size * riskPct; p.costEur = size * costWin;
+  const liqD = (lev <= 1 && L) ? null : (1 / lev) * 0.85;
+  p.liq = liqD == null ? null : p.entry * (1 - sg * liqD);
+  if (liqD != null && p.stopPct > 0.7 * liqD && !p.blocked) p.blocked = "Stop ligt te dicht bij de liquidatieprijs: verlaag de hefboom";
+  // risicolabel
+  const R = [], against = L ? "dn" : "up", sigAgainst = L ? "V" : "K";
+  if (t.h4 === against) R.push([2, "4u-trend staat nog tegen"]);
+  if (p.kind === "terugval" && t.d1 === against) R.push([2, "1d-trend staat tegen: tegen de grote trend in"]);
+  if (res["15m"] && res["15m"].signal === sigAgainst) R.push([1, "15m-signaal wijst de andere kant op"]);
+  const vr = res["1h"] && res["1h"].volRatio;
+  if (p.kind === "kruising" && vr != null && vr < 1.5) R.push([1, `Volume maar net voldoende (${vr.toFixed(1).replace(".", ",")}×)`]);
+  const r1 = res["1h"] && res["1h"].rsi;
+  if (r1 != null && (L ? r1 > 65 : r1 < 35)) R.push([1, `RSI 1u al ${r1.toFixed(0)}: beperkte ruimte`]);
+  if (d1 && d1.length >= 200) { const e200 = calcEMA(d1.map(c => c.close), 200).at(-1); if (L ? price < e200 : price > e200) R.push([1, `Koers ${L ? "onder" : "boven"} het 200-daags gemiddelde (€${fmt(e200)})`]); }
+  const tm = nlNow();
+  if (tm.weekend) R.push([1, "Weekend: dunne markt"]);
+  if (tm.night) R.push([1, "Nachtelijke uren: weinig volume"]);
+  if (p.main === 2) R.push([1, "Niveau onderweg naar het doel"]);
+  if (p.lev >= 4) R.push([1, `Hefboom ${p.lev}×`]);
+  if (p.capped) R.push([1, "Kapitaal te klein voor de volle positie"]);
+  p.riskPts = R.reduce((s, x) => s + x[0], 0); p.reasons = R.map(x => x[1]);
+  p.risk = p.riskPts <= 1 ? "laag" : p.riskPts <= 3 ? "verhoogd" : "hoog";
+  p.riskCol = p.risk === "laag" ? "#33ff99" : p.risk === "verhoogd" ? "#ffb000" : "#ff4d4d";
+  return p;
+}
+const nl1 = v => v.toFixed(1).replace(".", ",");
+function renderPlan(p) {
+  const panel = document.getElementById("planPanel");
+  if (!p || state.pos) { panel.style.display = "none"; return; }
+  panel.style.display = "block";
+  panel.style.borderColor = p.blocked ? "#1e3327" : p.riskCol;
+  const L = p.side === "long";
+  document.getElementById("planLabel").textContent = `PLAN · ${L ? "LONG" : "SHORT"} · ${p.kind === "terugval" ? "TERUGVAL IN TREND" : "KRUISING"}`;
+  if (p.blocked) {
+    document.getElementById("planBody").innerHTML = `<div class="n">Het ${L ? "long" : "short"}-signaal is er, maar het plan klopt niet:</div><div>› ${p.blocked}</div>
+      <div class="muted" style="margin-top:6px;">Wacht op een betere uitgangspositie of een doorbraak van dat niveau.</div>`;
+    return;
+  }
+  document.getElementById("planBody").innerHTML = `
+    <div class="risk" style="color:${p.riskCol};border-color:${p.riskCol};">RISICO ${p.risk.toUpperCase()}</div>
+    ${p.reasons.length ? `<div>${p.reasons.map(r => `<div>› ${r}</div>`).join("")}</div>` : `<div class="muted">› Geen extra risicofactoren gevonden</div>`}
+    <div class="plangrid">
+      <div><span>${p.limit ? "Limietorder instap" : "Instap rond"}</span><b>€${fmt(p.entry)}</b></div>
+      <div><span>Stop (auto-close)</span><b class="v">€${fmt(p.stop)}</b></div>
+      <div><span>Doel 1${p.main === 1 ? " · hoofddoel" : ""}</span><b class="k">€${fmt(p.t1)}</b></div>
+      <div><span>Doel 2${p.main === 2 ? " · hoofddoel" : ""}</span><b class="k">€${fmt(p.t2)}</b></div>
+      <div><span>Winst/risico na kosten</span><b>${nl1(p.rr)} : 1</b></div>
+      <div><span>Stopafstand</span><b>${(p.stopPct * 100).toFixed(2).replace(".", ",")}%</b></div>
+      <div><span>Positiegrootte</span><b>€${fmt(p.size)}</b></div>
+      <div><span>Eigen inleg bij ${p.lev}×</span><b>€${fmt(p.margin)}</b></div>
+      <div><span>Je riskeert</span><b>€${p.riskEur.toFixed(2).replace(".", ",")}</b></div>
+      <div><span>Liquidatie (schatting)</span><b>${p.liq ? "€" + fmt(p.liq) : "n.v.t."}</b></div>
+    </div>
+    ${p.limit ? `<div class="n" style="margin-top:8px;">› De koers is uitgerekt ten opzichte van de 1u-EMA21. Niet achteraan rennen: zet een limietorder op €${fmt(p.entry)}. Wordt die binnen ±4 uur niet gevuld, dan laat je hem vervallen.</div>` : ""}
+    <div class="muted" style="margin-top:6px;">› Zet bij openen direct de auto-close op €${fmt(p.stop)} en €${fmt(p.tgt)}. Kosten bij winst (fees + 1 dag leenrente): ±€${p.costEur.toFixed(2).replace(".", ",")}.</div>
+    <div class="btnrow"><button class="${L ? "long" : "short"}" onclick="takePlan()">✓ ${L ? "Long" : "Short"} geopend volgens plan</button></div>`;
+}
+function takePlan() {
+  const p = state.plan; if (!p || p.blocked) return;
+  storePos({ side: p.side, entry: Math.round(p.entry), stop: Math.round(p.stop), tgt: Math.round(p.tgt), lev: p.lev, size: Math.round(p.size), date: new Date().toISOString() });
+  render();
+}
+function renderLevels(price) {
+  const el = document.getElementById("levels");
+  const list = state.zones.filter(z => z.w >= 2 && Math.abs(z.mid / price - 1) < 0.07).sort((a, b) => b.mid - a.mid);
+  if (!list.length) { el.innerHTML = `<div class="muted">Geen sterke niveaus binnen 7% van de koers.</div>`; return; }
+  const max = Math.max(...list.map(z => z.w));
+  let h = "", placed = false;
+  const nowRow = `<div class="lvrow now"><span>› koers nu</span><span>€${fmt(price)}</span><span></span></div>`;
+  list.forEach(z => {
+    if (!placed && z.mid < price) { h += nowRow; placed = true; }
+    const col = z.mid > price ? "#ff6b6b" : "#33ff99";
+    h += `<div class="lvrow"><span>${z.label}</span><span style="color:${col}">€${fmt(z.mid)}</span><span><span style="display:inline-block;height:6px;width:${Math.round(8 + 50 * z.w / max)}px;background:${col};opacity:.6;"></span></span></div>`;
+  });
+  if (!placed) h += nowRow;
+  el.innerHTML = `<div class="muted" style="margin-bottom:6px;">Rood = weerstand boven de koers, groen = steun eronder. Hoe langer het balkje, hoe vaker de koers hier reageerde.</div>` + h;
+}
+/* --- schaduwlogboek --- */
+function loadLog() { try { return JSON.parse(localStorage.getItem(LOG_KEY) || "[]"); } catch (e) { return []; } }
+function saveLog(l) { try { localStorage.setItem(LOG_KEY, JSON.stringify(l.slice(-300))); } catch (e) {} }
+function logPlan(p) {
+  if (!p || p.stop == null) return;
+  const log = loadLog(), now = Date.now();
+  const last = log.filter(e => e.side === p.side).slice(-1)[0];
+  if (last && now - last.ts < 36e5 && Math.abs(last.entry / p.entry - 1) < 0.003) return;
+  log.push({ ts: now, side: p.side, entry: p.entry, stop: p.stop, tgt: p.tgt, rr: +p.rr.toFixed(2), risk: p.blocked ? "-" : p.risk, filtered: !!p.blocked, why: p.blocked || "", status: "open", kind: p.kind });
+  saveLog(log);
+}
+function evalLog() {
+  const c = closedC("15m"); if (!c || !c.length) return;
+  const log = loadLog(); let ch = false;
+  for (const e of log) {
+    if (e.status !== "open" && e.status !== "gevuld") continue;
+    if (c[0].time > e.ts) { e.status = "geen data"; ch = true; continue; }
+    const after = c.filter(x => x.time + 9e5 > e.ts);
+    if (!after.length) continue;
+    let i0 = 0;
+    if (e.status === "open") {
+      const fi = after.slice(0, 16).findIndex(x => e.side === "long" ? x.low <= e.entry : x.high >= e.entry);
+      if (fi < 0) { if (after.length >= 16) { e.status = "niet gevuld"; ch = true; } continue; }
+      e.status = "gevuld"; e.fill = after[fi].time; i0 = fi; ch = true;
+    } else i0 = after.findIndex(x => x.time >= e.fill);
+    if (i0 < 0) continue;
+    for (let i = i0; i < after.length; i++) {
+      const x = after[i], L = e.side === "long";
+      if (L ? x.low <= e.stop : x.high >= e.stop) { e.status = "verlies"; e.R = -1; ch = true; break; }
+      if (L ? x.high >= e.tgt : x.low <= e.tgt) { e.status = "winst"; e.R = e.rr; ch = true; break; }
+      if (i - i0 >= 192) { e.status = "verlopen"; e.R = +(((x.close - e.entry) * (L ? 1 : -1)) / Math.abs(e.entry - e.stop)).toFixed(2); ch = true; break; }
+    }
+  }
+  if (ch) saveLog(log);
+}
+function renderLog() {
+  const log = loadLog(), el = document.getElementById("logBody");
+  if (!log.length) { el.innerHTML = `<div class="muted">Nog geen signalen vastgelegd.</div>`; return; }
+  const done = log.filter(e => ["winst", "verlies", "verlopen"].includes(e.status));
+  const stat = a => { if (!a.length) return "nog geen"; const w = a.filter(e => e.status === "winst").length, r = a.reduce((s, e) => s + (e.R || 0), 0);
+    return `${a.length} trades · ${Math.round(w / a.length * 100)}% winst · ${r >= 0 ? "+" : ""}${nl1(r)} R`; };
+  let h = `<div>Geadviseerd: ${stat(done.filter(e => !e.filtered))}</div>`;
+  ["laag", "verhoogd", "hoog"].forEach(r => h += `<div class="muted">› risico ${r}: ${stat(done.filter(e => e.risk === r))}</div>`);
+  h += `<div class="muted">› type terugval: ${stat(done.filter(e => !e.filtered && e.kind === "terugval"))}</div>`;
+  h += `<div class="muted">› type kruising: ${stat(done.filter(e => !e.filtered && e.kind !== "terugval"))}</div>`;
+  h += `<div>Weggefilterd: ${stat(done.filter(e => e.filtered))}</div>`;
+  h += `<div class="muted">Niet gevuld (gemist): ${log.filter(e => e.status === "niet gevuld").length}</div>`;
+  h += `<div class="scroll" style="margin-top:8px;"><table class="tf"><thead><tr><th>Wanneer</th><th>Signaal</th><th>Instap</th><th>Uitkomst</th></tr></thead><tbody>` +
+    log.slice(-20).reverse().map(e => `<tr><td>${new Date(e.ts).toLocaleString("nl-NL", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}</td>
+      <td class="${e.side === "long" ? "k" : "v"}">${e.side} ${e.kind === "terugval" ? "T" : "K"}${e.filtered ? " (gefilterd)" : " · " + e.risk}</td><td>€${fmt(e.entry)}</td>
+      <td>${e.status}${e.R != null ? ` (${e.R > 0 ? "+" : ""}${nl1(e.R)} R)` : ""}</td></tr>`).join("") + `</tbody></table></div>`;
+  el.innerHTML = h;
+}
+function clearLog() { if (confirm("Het hele schaduwlogboek wissen?")) { localStorage.removeItem(LOG_KEY); renderLog(); } }
+/* --- instellingen --- */
+function toggleSettings() { state.setOpen = !state.setOpen; renderSettings(); }
+function renderSettings() {
+  document.getElementById("setBtn").textContent = state.setOpen ? "instellingen verbergen" : "instellingen tonen";
+  const f = document.getElementById("setForm");
+  if (!state.setOpen) { f.innerHTML = ""; return; }
+  const inp = (id, lbl, v, step) => `<label>${lbl}<input type="number" id="${id}" step="${step}" inputmode="decimal" value="${v}"></label>`;
+  f.innerHTML = `<div class="formgrid">
+    ${inp("sCap", "Handelskapitaal €", SET.capital, 1)}${inp("sRisk", "Risico per trade %", SET.riskPct, 0.1)}
+    <label>Max. hefboom<select id="sLev">${[1, 2, 3, 4, 5].map(n => `<option ${n === SET.maxLev ? "selected" : ""}>${n}</option>`).join("")}</select></label>
+    ${inp("sRR", "Min. winst/risico", SET.minRR, 0.1)}${inp("sMaker", "Makerfee %", SET.maker, 0.01)}${inp("sTaker", "Takerfee %", SET.taker, 0.01)}
+    ${inp("sBorrow", "Leenrente % per dag", SET.borrow, 0.001)}</div>
+    <div class="btnrow"><button class="primary" onclick="saveSettings()">Opslaan</button></div>
+    <div class="muted" style="margin-top:8px;">Fees staan op het Bitvavo-standaardtarief. De leenrente wisselt; controleer het actuele percentage in de Bitvavo-app.</div>`;
+}
+function saveSettings() {
+  const g = id => parseFloat(document.getElementById(id).value);
+  const n = { capital: g("sCap"), riskPct: g("sRisk"), maxLev: parseInt(document.getElementById("sLev").value, 10), minRR: g("sRR"), maker: g("sMaker"), taker: g("sTaker"), borrow: g("sBorrow") };
+  if (Object.values(n).some(v => !(v >= 0))) { alert("Controleer de ingevulde waarden."); return; }
+  if (n.riskPct > 5 && !confirm("Meer dan 5% risico per trade kan je account snel leeghalen. Toch opslaan?")) return;
+  SET = Object.assign({}, SET, n);
+  try { localStorage.setItem(SET_KEY, JSON.stringify(SET)); } catch (e) {}
+  state.setOpen = false; renderSettings(); render();
+}
+
 /* ---------- render ---------- */
 function setBadge(title, sub, add, color) {
   const a = document.getElementById("advice");
@@ -442,6 +753,8 @@ function render() {
   const sig = {}, t = {};
   IVS.forEach(iv => { if (res[iv]) { sig[iv] = res[iv].signal; t[iv === "15m" ? "m15" : iv] = res[iv].trend; } });
   const trends = { h1: t["1h"], h4: t["4h"], d1: t["1d"] };
+  state.zones = complete && price ? buildZones(price) : [];
+  state.plan = null;
 
   // tabel per timeframe
   const SIGTXT = { K: "KOPEN", N: "NIETS", V: "VERKOPEN" };
@@ -473,19 +786,37 @@ function render() {
         ? (pos.side === "long" ? "Bijkopen toegestaan (max. helft eerste positie)." : "Bijshorten toegestaan (max. helft eerste positie).")
         : (pos.side === "long" ? "Niet bijkopen." : "Niet bijshorten.");
       const noStop = pos.stop ? "" : " · Let op: je hebt nog geen stop ingesteld.";
-      setBadge(title, sub + noStop, add, CODES[code].col);
+      let tip = "";
+      if (pos.stop && price) {
+        const sg = pos.side === "long" ? 1 : -1, R = sg * (price - pos.entry) / Math.abs(pos.entry - pos.stop);
+        if (pos.tgt && sg * (price - pos.tgt) >= 0) tip = ` · Doel €${fmt(pos.tgt)} bereikt: neem (deels) winst.`;
+        else if (R >= 1 && sg * (pos.stop - pos.entry) < 0) tip = ` · Tip: 1× risico in de plus, zet je stop op je instap (€${fmt(pos.entry)}).`;
+      }
+      setBadge(title, sub + noStop + tip, add, CODES[code].col);
     }
   } else {
     label.textContent = "ADVIES · GEEN POSITIE";
-    const eL = entryCheck("long", res, trends), eS = entryCheck("short", res, trends);
-    const sL = suggestStop("long"), sS = suggestStop("short");
-    if (eL.ok) setBadge("LONG MOGELIJK", `Alle voorwaarden voor long zijn groen.${sL ? ` Stop-suggestie €${fmt(sL)}.` : ""}`, "Koopadvies geldt voor LONG (inzetten op stijging).", "#33ff99");
-    else if (eS.ok) setBadge("SHORT MOGELIJK", `Alle voorwaarden voor short zijn groen.${sS ? ` Stop-suggestie €${fmt(sS)}.` : ""}`, "Advies geldt voor SHORT (inzetten op daling).", "#ff4d4d");
-    else if (eL.near) setBadge("NOG NIET · LONG IN AANLOOP", "4h en 1d staan goed en de 1h-trend is opwaarts, maar er is nog geen bevestigd 1h-koopsignaal.", "Wachten.", "#ffb000");
-    else if (eS.near) setBadge("NOG NIET · SHORT IN AANLOOP", "4h en 1d staan goed en de 1h-trend is neerwaarts, maar er is nog geen bevestigd 1h-verkoopsignaal.", "Wachten.", "#ffb000");
+    const eL = fullCheck("long", res, trends), eS = fullCheck("short", res, trends);
+    if (eL.ok || eS.ok) {
+      const side = eL.ok ? "long" : "short", L = side === "long", f = L ? eL : eS;
+      const p = makePlan(side, res, trends, price, f.kind);
+      state.plan = p; logPlan(p);
+      if (!p) setBadge(L ? "LONG MOGELIJK" : "SHORT MOGELIJK", "Plan kon niet berekend worden.", "", L ? "#33ff99" : "#ff4d4d");
+      else if (p.blocked) setBadge(L ? "LONG-SIGNAAL · NIET INSTAPPEN" : "SHORT-SIGNAAL · NIET INSTAPPEN", p.blocked + ".", "De matrix is groen, maar het plan klopt niet. Zie PLAN.", "#ffb000");
+      else setBadge((L ? (p.limit ? "LONG · LIMIETORDER" : "LONG MOGELIJK") : (p.limit ? "SHORT · LIMIETORDER" : "SHORT MOGELIJK")) + (p.kind === "terugval" ? " · TERUGVAL" : " · KRUISING"),
+        `${p.limit ? "Limiet" : "Instap"} €${fmt(p.entry)} · stop €${fmt(p.stop)} · doel €${fmt(p.tgt)} · winst/risico ${nl1(p.rr)}`,
+        `Risico ${p.risk}${p.reasons.length ? ": " + p.reasons.join(", ").toLowerCase() : ""}`, p.riskCol);
+    }
+    else if (eL.nearPb) setBadge("NOG NIET · LONG IN AANLOOP", "Trend op 1u en 4u is opwaarts en de koers is teruggevallen naar de 1u-EMA21 of een steun. Wacht tot de 15m weer omhoog draait (EMA9 boven EMA21).", "Houd de app open of kijk over een kwartier opnieuw.", "#ffb000");
+    else if (eS.nearPb) setBadge("NOG NIET · SHORT IN AANLOOP", "Trend op 1u en 4u is neerwaarts en de koers is opgeveerd naar de 1u-EMA21 of een weerstand. Wacht tot de 15m weer omlaag draait (EMA9 onder EMA21).", "Houd de app open of kijk over een kwartier opnieuw.", "#ffb000");
+    else if (eL.nearX) setBadge("NOG NIET · LONG IN AANLOOP", "4h en 1d staan goed en de 1h-trend is opwaarts, maar er is nog geen terugval of bevestigd 1h-koopsignaal.", "Wachten op een terugval naar de 1u-EMA21.", "#ffb000");
+    else if (eS.nearX) setBadge("NOG NIET · SHORT IN AANLOOP", "4h en 1d staan goed en de 1h-trend is neerwaarts, maar er is nog geen opleving of bevestigd 1h-verkoopsignaal.", "Wachten op een opleving naar de 1u-EMA21.", "#ffb000");
     else setBadge("NIETS DOEN", "Geen instap in welke richting dan ook: de timeframes spreken elkaar tegen of geven geen signaal.", "", "#5a7a63");
   }
   renderEntry(complete, res, trends, price);
+  renderPlan(state.plan);
+  if (complete && price) renderLevels(price);
+  evalLog(); renderLog();
 
   // matrix
   const view = pos ? pos.side : state.matrixView;
@@ -511,16 +842,26 @@ function renderEntry(complete, res, t, price) {
   if (!complete) { grid.innerHTML = `<div class="muted">Wachten op alle vier de timeframes.</div>`; note.textContent = ""; return; }
   note.textContent = state.pos ? `Je hebt al een ${state.pos.side}. Ter informatie; open niet tegelijk de andere richting.` : "Beide richtingen worden steeds apart getoetst.";
   grid.innerHTML = ["long", "short"].map(side => {
-    const e = entryCheck(side, res, t), col = side === "long" ? "#33ff99" : "#ff4d4d";
-    const st = e.ok ? ["INSTAP MOGELIJK", col] : e.near ? ["IN AANLOOP", "#ffb000"] : ["GEEN INSTAP", "#5a7a63"];
+    const e = fullCheck(side, res, t), col = side === "long" ? "#33ff99" : "#ff4d4d";
+    const st = e.ok ? [`INSTAP MOGELIJK · ${e.kind.toUpperCase()}`, col] : e.near ? ["IN AANLOOP", "#ffb000"] : ["GEEN INSTAP", "#5a7a63"];
+    const ckl = arr => arr.map(c => `<div class="${c[1] ? "k" : "muted"}">${c[1] ? "✓" : "✗"} ${c[0]}</div>`).join("");
     const ss = suggestStop(side);
     const sg = ss && price ? `Stop-suggestie €${fmt(ss)} (${(Math.abs(price - ss) / price * 100).toFixed(1)}% van de koers, voorbij het 1h-${side === "long" ? "dal" : "top"} van de laatste 12 uur)` : "";
     return `<div class="entry" style="border-color:${e.ok ? col : "#1e3327"}">
       <h3 style="color:${col}">${side === "long" ? "▲ LONG" : "▼ SHORT"}</h3>
       <div class="st" style="color:${st[1]}">${st[0]}</div>
-      <div class="ck">${e.checks.map(c => `<div class="${c[1] ? "k" : "muted"}">${c[1] ? "✓" : "✗"} ${c[0]}</div>`).join("")}</div>
-      <div class="sg">${sg}</div></div>`;
+      <div class="ck"><div class="label" style="margin:4px 0 2px;">TERUGVAL IN TREND</div>${ckl(e.p.checks)}
+        <div class="label" style="margin:8px 0 2px;">KRUISING (ORIGINEEL)</div>${ckl(e.x.checks)}</div>
+      <div class="sg">${sg}</div>${planLine(side, e, res, t, price)}</div>`;
   }).join("");
+}
+function planLine(side, e, res, t, price) {
+  if (!e.ok) return "";
+  const p = state.plan && state.plan.side === side ? state.plan : makePlan(side, res, t, price, e.kind);
+  if (!p) return "";
+  if (p.blocked) return `<div class="ck n" style="margin-top:6px;">✗ ${p.blocked}</div>`;
+  return `<div class="ck" style="margin-top:6px;"><div class="label" style="margin:8px 0 2px;">PLANTOETS</div><div class="${p.stretched ? "n" : "k"}">${p.stretched ? "✗ Uitgerekt: limietorder op €" + fmt(p.entry) : "✓ Niet uitgerekt"}</div>
+    <div class="k">✓ Winst/risico na kosten ${nl1(p.rr)}</div><div style="color:${p.riskCol}">● Risico ${p.risk}</div></div>`;
 }
 function setView(v) { state.matrixView = v; render(); }
 
@@ -540,6 +881,8 @@ function renderPosition(price) {
       const risk = Math.abs(p.entry - p.stop) / p.entry * 100 * p.lev;
       html += `<div>Stop €${fmt(p.stop)} · ${dist.toFixed(1)}% van de koers · max. verlies ±${risk.toFixed(1)}% van je inleg</div>`;
     } else html += `<div class="warn">Geen stop ingesteld.</div>`;
+    if (p.tgt) html += `<div>Doel €${fmt(p.tgt)}${price ? ` · nog ${(Math.abs(p.tgt - price) / price * 100).toFixed(1)}%` : ""}</div>`;
+    if (p.size) { const h = (Date.now() - new Date(p.date).getTime()) / 36e5; html += `<div class="muted">Positie €${fmt(p.size)} · leenrente tot nu ±€${(p.size * SET.borrow / 100 * h / 24).toFixed(2).replace(".", ",")}</div>`; }
     if (liq) {
       html += `<div>Liquidatie ±€${fmt(liq)} <span class="muted">(grove schatting)</span></div>`;
       if (!p.stop) html += `<div class="warn">Met ${p.lev}x hefboom zonder stop riskeer je liquidatie.</div>`;
@@ -596,13 +939,19 @@ function renderChart(candles, ema9, ema21) {
   let max = Math.max(...vals), min = Math.min(...vals);
   const p = state.pos;
   const extra = [];
-  if (p) { extra.push([p.entry, "#c9e6d3"]); if (p.stop) extra.push([p.stop, "#ff6b6b"]); }
+  if (p) { extra.push([p.entry, "#c9e6d3"]); if (p.stop) extra.push([p.stop, "#ff6b6b"]); if (p.tgt) extra.push([p.tgt, "#33ff99"]); }
+  else if (state.plan && !state.plan.blocked) { const q = state.plan; extra.push([q.entry, "#c9e6d3"], [q.stop, "#ff6b6b"], [q.tgt, "#33ff99"]); }
   extra.forEach(([v]) => { max = Math.max(max, v); min = Math.min(min, v); });
   const range = max - min || 1, cw = (W - padL - padR) / vis.length;
   const y = v => padT + (1 - (v - min) / range) * (H - padT - padB);
   const x = i => padL + i * cw + cw / 2;
   const line = arr => arr.map((v, i) => `${i === 0 ? "M" : "L"} ${x(i)} ${y(v)}`).join(" ");
   let svg = "";
+  const lastC = vis[vis.length - 1].close;
+  state.zones.filter(z => z.w >= 2 && z.hi >= min && z.lo <= max).forEach(z => {
+    const top = y(Math.min(z.hi, max)), bot = y(Math.max(z.lo, min));
+    svg += `<rect x="${padL}" y="${top}" width="${W - padL - padR}" height="${Math.max(2, bot - top)}" fill="${z.mid > lastC ? "#ff4d4d" : "#33ff99"}" opacity="0.10"/>`;
+  });
   vis.forEach((c, i) => {
     const col = c.close >= c.open ? "#33ff99" : "#ff4d4d", xc = x(i);
     svg += `<line x1="${xc}" x2="${xc}" y1="${y(c.high)}" y2="${y(c.low)}" stroke="${col}" stroke-width="1"/>`;
@@ -641,6 +990,7 @@ document.querySelectorAll("#intervals button[data-iv]").forEach(b => b.addEventL
 document.getElementById("refreshBtn").addEventListener("click", fetchAll);
 setInterval(() => { const c = document.getElementById("cursor"); c.style.opacity = c.style.opacity === "0" ? "1" : "0"; }, 600);
 
+renderSettings();
 render();
 fetchAll();
 state.timer = setInterval(fetchAll, 60000);
