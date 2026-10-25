@@ -193,7 +193,7 @@
   </div>
 
   <div class="disclaimer">
-    Twee soorten instap: een terugval naar de 1u-EMA21 of steun binnen een trend op 1u en 4u, bevestigd door een 15m-omslag; en de originele
+    Twee soorten instap: een terugval naar de 1u-EMA21 of steun binnen een trend op 1u en 4u, bevestigd door een 15m-omslag (een oudere omslag telt nog zolang de koers sindsdien minder dan 1× de 1u-ATR is gelopen); en de originele
     EMA9/EMA21-kruising (in de laatste 3 gesloten candles + RSI14 + volume, per timeframe bevestigd door de hogere timeframe; de lopende candle telt niet mee),
     gecombineerd met je eigen beslismatrix. Daarbovenop: instaptiming (niet achter een uitgerekte beweging aan), steun en weerstand uit dezelfde candles,
     winst/risico na Bitvavo-kosten, positiegrootte en een risicolabel. De liquidatieprijs is een grove schatting zonder onderhoudsmarge,
@@ -322,6 +322,7 @@ async function fetchAll() {
 }
 
 /* ---------- signaal per timeframe ---------- */
+const TURN_MAX_RUN = 1.0; // late 15m-draai telt nog als de koers sindsdien minder dan 1× de 1u-ATR is gelopen
 const LOOKBACK = 3; // kruising mag maximaal zoveel gesloten candles geleden zijn
 function computeSignal(candles) {
   if (!candles || candles.length <= 27) return null;
@@ -521,19 +522,34 @@ function pullbackCheck(side, res, t) {
   const holds = sg * (h1[n].close - e21[n]) > -0.5 * A;
   // 15m draait mee: EMA9/EMA21-kruising in trendrichting binnen de laatste 6 gesloten 15m-candles
   const c15 = m15.map(c => c.close), a9 = calcEMA(c15, 9), a21 = calcEMA(c15, 21), m = c15.length - 1;
-  let turned = false;
-  for (let k = 0; k < 6; k++) { const i = m - k; if (i < 1) break; if (sg * (a9[i - 1] - a21[i - 1]) <= 0 && sg * (a9[i] - a21[i]) > 0) { turned = true; break; } }
+  // zoek de laatste draai in trendrichting (max. 40 candles = 10 uur terug)
+  let ago = -1;
+  for (let k = 0; k < 40; k++) { const i = m - k; if (i < 1) break; if (sg * (a9[i - 1] - a21[i - 1]) <= 0 && sg * (a9[i] - a21[i]) > 0) { ago = k; break; } }
   const nowOk = sg * (a9[m] - a21[m]) > 0, r1 = res["1h"].rsi, rsiOk = r1 == null || (L ? r1 < 70 : r1 > 30);
+  // "te laat" meten we in koersafstand, niet in tijd: hoeveel is de koers al gelopen sinds de draai?
+  const ran = ago >= 0 ? sg * (c15[m] - c15[m - ago]) : null;
+  const fresh = nowOk && ago >= 0 && ago < 6;
+  const lateOk = nowOk && ago >= 6 && ran != null && ran <= TURN_MAX_RUN * A;
+  const turned = fresh || lateOk;
+  const pctRan = ran != null ? Math.max(0, ran / c15[m] * 100).toFixed(1).replace(".", ",") : "";
+  const dirTxt = L ? "omhoog" : "omlaag";
+  let turnLbl, turnWhy;
+  if (!nowOk) { turnLbl = `15m draait ${dirTxt} (EMA9/21): nog niet`; turnWhy = "wait"; }
+  else if (fresh) { turnLbl = `15m draait ${dirTxt} (EMA9/21, ${ago === 0 ? "net" : ago + " candle" + (ago > 1 ? "s" : "") + " geleden"})`; turnWhy = "ok"; }
+  else if (lateOk) { turnLbl = `15m staat al ${ago} candles ${dirTxt}, koers pas ${pctRan}% gelopen: nog op tijd`; turnWhy = "ok"; }
+  else if (ago < 0) { turnLbl = `15m staat al langer dan 10 uur ${dirTxt}: geen recente draai`; turnWhy = "late"; }
+  else { turnLbl = `15m-draai te laat: koers al ${pctRan}% gelopen sinds ${ago} candles`; turnWhy = "late"; }
+  out.turnWhy = turnWhy;
   out.checks = [
     [`1u-trend ${L ? "opwaarts" : "neerwaarts"}`, res["1h"].trend === tw],
     [`4u-trend ${L ? "opwaarts" : "neerwaarts"}`, res["4h"].trend === tw],
     [`1d niet op ${L ? "VERKOPEN" : "KOPEN"}`, res["1d"].signal !== (L ? "V" : "K")],
     [`Terugval naar ${where || "1u-EMA21 of " + (L ? "steun" : "weerstand")}`, touched && holds],
-    [`15m draait ${L ? "omhoog" : "omlaag"} (EMA9/21)`, turned && nowOk],
+    [turnLbl, turned],
     [`RSI 1u niet ${L ? "overbought" : "oversold"}`, rsiOk]
   ];
   const base = out.checks.slice(0, 3).every(c => c[1]) && rsiOk;
-  out.ok = base && touched && holds && turned && nowOk;
+  out.ok = base && touched && holds && turned;
   out.near = !out.ok && base && touched && holds;
   return out;
 }
@@ -807,6 +823,8 @@ function render() {
         `${p.limit ? "Limiet" : "Instap"} €${fmt(p.entry)} · stop €${fmt(p.stop)} · doel €${fmt(p.tgt)} · winst/risico ${nl1(p.rr)}`,
         `Risico ${p.risk}${p.reasons.length ? ": " + p.reasons.join(", ").toLowerCase() : ""}`, p.riskCol);
     }
+    else if (eL.nearPb && eL.p.turnWhy === "late") setBadge("TE LAAT · LONG AL GELOPEN", "Trend op 1u en 4u is opwaarts en de 15m staat al omhoog, maar de koers is sinds de draai te ver opgelopen. Instappen nu betekent een verre stop en weinig ruimte.", "Wacht op een nieuwe terugval richting de 1u-EMA21.", "#ffb000");
+    else if (eS.nearPb && eS.p.turnWhy === "late") setBadge("TE LAAT · SHORT AL GELOPEN", "Trend op 1u en 4u is neerwaarts en de 15m staat al omlaag, maar de koers is sinds de draai te ver gezakt. Instappen nu betekent een verre stop en weinig ruimte.", "Wacht op een nieuwe opleving richting de 1u-EMA21.", "#ffb000");
     else if (eL.nearPb) setBadge("NOG NIET · LONG IN AANLOOP", "Trend op 1u en 4u is opwaarts en de koers is teruggevallen naar de 1u-EMA21 of een steun. Wacht tot de 15m weer omhoog draait (EMA9 boven EMA21).", "Houd de app open of kijk over een kwartier opnieuw.", "#ffb000");
     else if (eS.nearPb) setBadge("NOG NIET · SHORT IN AANLOOP", "Trend op 1u en 4u is neerwaarts en de koers is opgeveerd naar de 1u-EMA21 of een weerstand. Wacht tot de 15m weer omlaag draait (EMA9 onder EMA21).", "Houd de app open of kijk over een kwartier opnieuw.", "#ffb000");
     else if (eL.nearX) setBadge("NOG NIET · LONG IN AANLOOP", "4h en 1d staan goed en de 1h-trend is opwaarts, maar er is nog geen terugval of bevestigd 1h-koopsignaal.", "Wachten op een terugval naar de 1u-EMA21.", "#ffb000");
