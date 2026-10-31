@@ -104,6 +104,7 @@
     <div class="meta" id="meta">verbinden...</div>
   </div>
 
+  <div class="error" id="priceWarn"></div>
   <div class="error" id="error"></div>
 
   <div class="panel badge" id="badge">
@@ -210,10 +211,11 @@ const IV_LABEL = { "15m": "15M", "1h": "1U", "4h": "4U", "1d": "1D" };
 const PARENT = { "15m": "1h", "1h": "4h", "4h": "1d", "1d": null };
 const POS_KEY = "btc_pro_position";
 const LOG_KEY = "btc_pro_log", SET_KEY = "btc_pro_settings";
-const COIN = { binance: "BTCEUR", kraken: "XBTEUR" };
+const COIN = { binance: "BTCEUR", kraken: "XBTEUR", bitvavo: "BTC-EUR" };
+const IV_MS = { "15m": 900000, "1h": 3600000, "4h": 14400000, "1d": 86400000 };
 
 let state = {
-  data: {}, source: null, lastUpdate: null,
+  data: {}, source: null, sources: {}, check: null, lastUpdate: null,
   chartIv: "1h", pos: loadPos(), formOpen: false, matrixView: "long", timer: null, setOpen: false, plan: null, zones: []
 };
 
@@ -282,41 +284,75 @@ function calcRSI(values, period = 14) {
 }
 
 /* ---------- data ---------- */
+/* Bronvolgorde: Bitvavo (de beurs waar je handelt), dan Kraken, dan Binance.
+   Een bron met verouderde candles wordt overgeslagen. */
+function checkFresh(src, iv, candles) {
+  candles = candles.filter(c => isFinite(c.time) && c.close > 0).sort((a, b) => a.time - b.time);
+  if (candles.length < 30) throw new Error(`${src}: te weinig candles`);
+  const last = candles[candles.length - 1].time;
+  if (Date.now() - last > 2 * IV_MS[iv] + 120000)
+    throw new Error(`${src}: verouderde koersen (laatste ${new Date(last).toLocaleString("nl-NL", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })})`);
+  return candles;
+}
+async function fetchFromBitvavo(iv) {
+  const res = await fetch(`https://api.bitvavo.com/v2/${COIN.bitvavo}/candles?interval=${iv}&limit=500`, { cache: "no-store" });
+  if (!res.ok) throw new Error(`Bitvavo HTTP ${res.status}`);
+  const raw = await res.json();
+  if (!Array.isArray(raw) || !raw.length) throw new Error("Bitvavo: lege response");
+  return checkFresh("Bitvavo", iv, raw.map(k => ({ time: +k[0], open: +k[1], high: +k[2], low: +k[3], close: +k[4], volume: +k[5] })));
+}
 async function fetchFromBinance(iv) {
-  const res = await fetch(`https://api.binance.com/api/v3/klines?symbol=${COIN.binance}&interval=${iv}&limit=500`);
+  const res = await fetch(`https://api.binance.com/api/v3/klines?symbol=${COIN.binance}&interval=${iv}&limit=500`, { cache: "no-store" });
   if (!res.ok) throw new Error(`Binance HTTP ${res.status}`);
   const raw = await res.json();
   if (!Array.isArray(raw) || !raw.length) throw new Error("Binance: lege response");
-  return raw.map(k => ({ time: k[0], open: +k[1], high: +k[2], low: +k[3], close: +k[4], volume: +k[5] }));
+  return checkFresh("Binance", iv, raw.map(k => ({ time: k[0], open: +k[1], high: +k[2], low: +k[3], close: +k[4], volume: +k[5] })));
 }
 async function fetchFromKraken(iv) {
-  const res = await fetch(`https://api.kraken.com/0/public/OHLC?pair=${COIN.kraken}&interval=${KRAKEN_MINUTES[iv]}`);
+  const res = await fetch(`https://api.kraken.com/0/public/OHLC?pair=${COIN.kraken}&interval=${KRAKEN_MINUTES[iv]}`, { cache: "no-store" });
   if (!res.ok) throw new Error(`Kraken HTTP ${res.status}`);
   const data = await res.json();
   if (data.error && data.error.length) throw new Error("Kraken: " + data.error.join("; "));
   const key = Object.keys(data.result || {}).find(k => k !== "last");
   if (!key) throw new Error("Kraken: geen candle-data");
-  return data.result[key].slice(-500).map(k => ({ time: k[0] * 1000, open: +k[1], high: +k[2], low: +k[3], close: +k[4], volume: +k[6] }));
+  return checkFresh("Kraken", iv, data.result[key].slice(-500).map(k => ({ time: k[0] * 1000, open: +k[1], high: +k[2], low: +k[3], close: +k[4], volume: +k[6] })));
 }
 async function fetchOHLC(iv) {
   const errs = [];
-  try { return { candles: await fetchFromBinance(iv), source: "Binance" }; } catch (e) { errs.push(e.message); }
-  try { return { candles: await fetchFromKraken(iv), source: "Kraken" }; } catch (e) { errs.push(e.message); }
+  const srcs = [["Bitvavo", fetchFromBitvavo], ["Kraken", fetchFromKraken], ["Binance", fetchFromBinance]];
+  for (const [name, fn] of srcs) {
+    try { return { candles: await fn(iv), source: name }; }
+    catch (e) { errs.push(e.message && e.message.indexOf(name) === 0 ? e.message : `${name} niet bereikbaar`); }
+  }
   throw new Error(errs.join(" | "));
+}
+/* Actuele koers bij een tweede beurs, om de eerste te controleren. */
+async function fetchCheck(src) {
+  if (src !== "Bitvavo") {
+    const r = await fetch(`https://api.bitvavo.com/v2/ticker/price?market=${COIN.bitvavo}`, { cache: "no-store" });
+    const j = await r.json(); return { src: "Bitvavo", p: +j.price };
+  }
+  const r = await fetch(`https://api.kraken.com/0/public/Ticker?pair=${COIN.kraken}`, { cache: "no-store" });
+  const j = await r.json(); const k = Object.keys(j.result || {})[0]; return { src: "Kraken", p: +j.result[k].c[0] };
 }
 async function fetchAll() {
   document.getElementById("error").style.display = "none";
   const results = await Promise.allSettled(IVS.map(iv => fetchOHLC(iv)));
-  const failed = [];
+  const failed = [], why = [];
   results.forEach((r, i) => {
-    if (r.status === "fulfilled") { state.data[IVS[i]] = r.value.candles; state.source = r.value.source; }
-    else failed.push(IV_LABEL[IVS[i]]);
+    if (r.status === "fulfilled") { state.data[IVS[i]] = r.value.candles; state.sources[IVS[i]] = r.value.source; }
+    else { failed.push(IV_LABEL[IVS[i]]); why.push(r.reason && r.reason.message); delete state.data[IVS[i]]; delete state.sources[IVS[i]]; }
   });
+  const used = [...new Set(Object.values(state.sources))];
+  state.source = used.join(" + ") || null;
   if (failed.length) {
     const el = document.getElementById("error");
     el.style.display = "block";
-    el.textContent = `Kon geen live candles ophalen voor ${failed.join(", ")} bij Binance of Kraken. De matrix is pas betrouwbaar als alle vier de timeframes geladen zijn. Check je verbinding of tik op ververs.`;
+    el.textContent = `Kon geen actuele candles ophalen voor ${failed.join(", ")}. De matrix is pas betrouwbaar als alle vier de timeframes geladen zijn. Tik op ververs. (${why[0] || ""})`;
   }
+  state.check = null;
+  const primary = state.sources["15m"] || state.sources["1h"];
+  if (primary) { try { state.check = await fetchCheck(primary); } catch (e) { state.check = null; } }
   if (failed.length < IVS.length) state.lastUpdate = new Date();
   render();
 }
@@ -759,10 +795,19 @@ function setBadge(title, sub, add, color) {
 }
 
 function render() {
-  document.getElementById("meta").textContent = state.lastUpdate
-    ? `bron: ${state.source} · update ${state.lastUpdate.toLocaleTimeString("nl-NL")}` : "verbinden...";
   const price = currentPrice();
   if (price) document.getElementById("price").textContent = "€" + fmt(price);
+  let chk = "", bad = false;
+  if (state.check && state.check.p > 0 && price) {
+    const dev = state.check.p / price - 1;
+    bad = Math.abs(dev) > 0.01;
+    chk = bad ? ` · ${state.check.src} zegt €${fmt(state.check.p)}` : ` · gecontroleerd met ${state.check.src} ✓`;
+  }
+  document.getElementById("meta").textContent = state.lastUpdate
+    ? `bron: ${state.source} · update ${state.lastUpdate.toLocaleTimeString("nl-NL")}${chk}` : "verbinden...";
+  const pw = document.getElementById("priceWarn");
+  pw.style.display = bad ? "block" : "none";
+  if (bad) pw.textContent = `LET OP: de koers van ${state.source} (€${fmt(price)}) wijkt ${pct((state.check.p / price - 1) * 100)} af van ${state.check.src} (€${fmt(state.check.p)}). Signalen, stops en niveaus kunnen dan niet kloppen. Controleer de koers in de Bitvavo-app voordat je iets doet.`;
 
   const res = {}; IVS.forEach(iv => res[iv] = analyze(iv));
   const complete = IVS.every(iv => res[iv]);
