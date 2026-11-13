@@ -37,6 +37,14 @@
   .error { border: 1px solid #ff4d4d; color: #ff4d4d; padding: 12px; font-size: 12px; margin-bottom: 12px; display: none; }
   svg { display: block; width: 100%; height: auto; }
   .legend { font-size: 10.5px; color: #5a7a63; display: flex; gap: 12px; flex-wrap: wrap; margin-top: 4px; }
+  .tabs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-bottom: 10px; }
+  .tabs button { padding: 9px 4px; font-size: 13px; }
+  .tabs button.on { border-color: #ffb000; color: #ffb000; }
+  table.tf { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  table.tf td, table.tf th { padding: 7px 4px; border-bottom: 1px solid #13221a; text-align: left; }
+  table.tf th { color: #5a7a63; font-weight: 400; font-size: 10.5px; }
+  table.tf tr { cursor: pointer; }
+  table.tf tr.on td { background: #10301d; }
   .small { font-size: 11px; color: #5a7a63; line-height: 1.6; }
 </style>
 </head>
@@ -61,9 +69,15 @@
   </div>
 
   <div class="panel section">
-    <div class="label">4-UURS KAARSEN · LAATSTE 10 DAGEN</div>
+    <div class="label">ALLE TIJDSKADERS · TIK OM TE BEKIJKEN</div>
+    <div id="tfs"></div>
+  </div>
+
+  <div class="panel section">
+    <div class="tabs" id="tabs"></div>
+    <div class="label" id="chartLbl">4-UURS KAARSEN</div>
     <svg id="chart" viewBox="0 0 600 260"></svg>
-    <div class="legend"><span class="k">── EMA 9</span><span class="n">── EMA 21</span><span>▲ koop · ▼ verkoop (zelfde regels)</span></div>
+    <div class="legend"><span class="k">── EMA 9</span><span class="n">── EMA 21</span><span id="markLeg">▲ koop · ▼ verkoop (zelfde regels)</span></div>
   </div>
 
   <div class="panel section" id="posPanel"></div>
@@ -204,12 +218,33 @@ function render() {
     : `<div class="label">JOUW POSITIE</div><div class="m">Je hebt (volgens de terminal) geen BTC. Gekocht? Vul de prijs in.</div><input id="buyPx" type="number" inputmode="decimal" placeholder="aankoopprijs in euro" value="${Math.round(live)}"><button class="go" onclick="bought()">Ik heb gekocht</button>`;
   const T = D.T;
   document.getElementById("track").innerHTML = `<b>Terugblik ${T.days} dagen</b> met precies deze regels (0,25% kosten per aan- en verkoop): ${T.trades} afgeronde trades, ${T.wins} met winst, resultaat <span class="${T.eq >= 1 ? "k" : "v"}">${pc(T.eq - 1)}</span>. Gewoon vasthouden in dezelfde periode: <span class="${T.hold >= 1 ? "k" : "v"}">${pc(T.hold - 1)}</span>.`;
-  document.getElementById("chart").innerHTML = chart();
+  renderTfs(); renderChart();
   document.getElementById("meta").textContent = `bron ${src} · bijgewerkt ${new Date().toLocaleTimeString("nl-NL", { hour: "2-digit", minute: "2-digit" })}`;
 }
-function chart() {
-  const { h4, R } = D, n = 60, a = h4.length - n, W = 600, H = 260, pad = 6;
-  const s = h4.slice(a), hi = Math.max(...s.map(x => x.high), ...R.e21.slice(a)), lo = Math.min(...s.map(x => x.low), ...R.e21.slice(a));
+const TF = [["15m", "15 min", "15-MINUTEN"], ["1h", "1 uur", "1-UURS"], ["4h", "4 uur", "4-UURS"], ["1d", "1 dag", "DAG"]];
+let curTf = "4h";
+function setTf(t) { curTf = t; renderTfs(); renderChart(); }
+function tfInfo(t) {
+  const c = D.tf[t], cl = c.map(x => x.close), e9 = ema(cl, 9), e21 = ema(cl, 21), i = c.length - 1;
+  return { c, e9, e21, last: c[i], up: e9[i] > e21[i], green: c[i].close >= c[i].open, above: c[i].close > e21[i] };
+}
+function renderTfs() {
+  document.getElementById("tfs").innerHTML = `<table class="tf"><thead><tr><th>Kader</th><th>EMA 9 / 21</th><th>Laatste kaars</th><th>Slot</th></tr></thead><tbody>` +
+    TF.map(([t, name]) => { const f = tfInfo(t);
+      return `<tr class="${t === curTf ? "on" : ""}" onclick="setTf('${t}')"><td>${name}${t === "4h" ? ' <span class="n">★</span>' : ""}</td>
+        <td class="${f.up ? "k" : "v"}">${f.up ? "▲ 9 boven 21" : "▼ 9 onder 21"}</td>
+        <td class="${f.green ? "k" : "v"}">${f.green ? "groen" : "rood"}</td>
+        <td class="${f.above ? "k" : "v"}">${fmt(f.last.close)}</td></tr>`; }).join("") +
+    `</tbody></table><div class="small" style="margin-top:6px;">★ = het kader waar het advies op draait (samen met de dagtrend). De andere kaders geven context: als die tegen het advies in staan, is een tegenvaller waarschijnlijker.</div>`;
+  document.getElementById("tabs").innerHTML = TF.map(([t, name]) => `<button class="${t === curTf ? "on" : ""}" onclick="setTf('${t}')">${name}</button>`).join("");
+}
+function renderChart() {
+  const f = tfInfo(curTf), lbl = TF.find(x => x[0] === curTf)[2];
+  const span = { "15m": "LAATSTE 15 UUR", "1h": "LAATSTE 2,5 DAG", "4h": "LAATSTE 10 DAGEN", "1d": "LAATSTE 2 MAANDEN" }[curTf];
+  document.getElementById("chartLbl").textContent = `${lbl} KAARSEN · ${span}`;
+  document.getElementById("markLeg").style.display = curTf === "4h" ? "" : "none";
+  const h4 = f.c, n = 60, a = h4.length - n, W = 600, H = 260, pad = 6;
+  const s = h4.slice(a), hi = Math.max(...s.map(x => x.high), ...f.e21.slice(a)), lo = Math.min(...s.map(x => x.low), ...f.e21.slice(a));
   const x = k => pad + (k + 0.5) * (W - 2 * pad) / n, y = v => pad + (1 - (v - lo) / (hi - lo)) * (H - 2 * pad), bw = (W - 2 * pad) / n * 0.6;
   let g = "";
   s.forEach((c, k) => {
@@ -218,13 +253,13 @@ function chart() {
     g += `<rect x="${x(k) - bw / 2}" y="${y(Math.max(c.open, c.close))}" width="${bw}" height="${Math.max(1, Math.abs(y(c.open) - y(c.close)))}" fill="${up ? "#0c130e" : col}" stroke="${col}"/>`;
   });
   const line = (arr, col) => `<path d="${arr.slice(a).map((v, k) => `${k ? "L" : "M"}${x(k).toFixed(1)} ${y(v).toFixed(1)}`).join(" ")}" fill="none" stroke="${col}" stroke-width="1.8"/>`;
-  g += line(R.e9, "#33ff99") + line(R.e21, "#ffb000");
-  D.T.marks.filter(m => m.i >= a).forEach(m => {
+  g += line(f.e9, "#33ff99") + line(f.e21, "#ffb000");
+  if (curTf === "4h") D.T.marks.filter(m => m.i >= a).forEach(m => {
     const k = m.i - a, c = h4[m.i];
     g += m.t === "b" ? `<text x="${x(k)}" y="${y(c.low) + 16}" text-anchor="middle" fill="#33ff99" font-size="14">▲</text>`
       : `<text x="${x(k)}" y="${y(c.high) - 5}" text-anchor="middle" fill="#ff4d4d" font-size="14">▼</text>`;
   });
-  return g;
+  document.getElementById("chart").innerHTML = g;
 }
 
 /* ---------- acties ---------- */
@@ -238,9 +273,9 @@ function sold() { if (confirm("Positie wissen? De terminal gaat dan weer kijken 
 async function load() {
   const err = document.getElementById("error"); err.style.display = "none";
   try {
-    const [a, b] = await Promise.all([candles("4h", 1440, H4), candles("1d", 400, DAY)]);
+    const [a, b, q, h] = await Promise.all([candles("4h", 1440, H4), candles("1d", 400, DAY), candles("15m", 300, 9e5), candles("1h", 300, 36e5)]);
     const R = build(a.closed, b.closed);
-    D = { h4: a.closed, d1: b.closed, R, live: a.live, src: a.src };
+    D = { h4: a.closed, d1: b.closed, R, live: q.live || a.live, src: a.src, tf: { "15m": q.closed, "1h": h.closed, "4h": a.closed, "1d": b.closed } };
     D.T = track(a.closed, R);
     render();
   } catch (e) { err.style.display = "block"; err.textContent = "Kon geen koersdata ophalen: " + e.message + ". Probeer het straks opnieuw."; }
