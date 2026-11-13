@@ -69,6 +69,11 @@
   </div>
 
   <div class="panel section">
+    <div class="label">STEUN EN WEERSTAND</div>
+    <div id="zones"></div>
+  </div>
+
+  <div class="panel section">
     <div class="label">ALLE TIJDSKADERS · TIK OM TE BEKIJKEN</div>
     <div id="tfs"></div>
   </div>
@@ -77,7 +82,7 @@
     <div class="tabs" id="tabs"></div>
     <div class="label" id="chartLbl">4-UURS KAARSEN</div>
     <svg id="chart" viewBox="0 0 600 260"></svg>
-    <div class="legend"><span class="k">── EMA 9</span><span class="n">── EMA 21</span><span id="markLeg">▲ koop · ▼ verkoop (zelfde regels)</span></div>
+    <div class="legend"><span class="k">── EMA 9</span><span class="n">── EMA 21</span><span><span style="color:#ff4d4d;">▬</span> weerstand · <span class="k">▬</span> steun</span><span id="markLeg">▲ koop · ▼ verkoop (zelfde regels)</span></div>
   </div>
 
   <div class="panel section" id="posPanel"></div>
@@ -171,6 +176,55 @@ function track(h4, R) {
   return { eq, trades, wins, hold, marks, days: Math.round((h4[h4.length - 1].time - h4[start].time) / DAY) };
 }
 
+/* ---------- steun en weerstand ----------
+   Keerpunten (toppen en bodems) op 4 uur en dag, samengevoegd tot zones.
+   Hoe vaker de koers daar keerde, en hoe groter het tijdskader, hoe sterker de zone. */
+function pivots(c, n, w, out) {
+  for (let i = n; i < c.length - n; i++) {
+    const win = c.slice(i - n, i + n + 1);
+    if (c[i].high === Math.max(...win.map(x => x.high))) out.push({ px: c[i].high, w });
+    if (c[i].low === Math.min(...win.map(x => x.low))) out.push({ px: c[i].low, w });
+  }
+}
+function buildZones(h4, d1, price) {
+  const lv = [];
+  pivots(h4.slice(-300), 3, 1, lv);
+  pivots(d1.slice(-200), 3, 2, lv);
+  for (let r = Math.floor(price * 0.85 / 5000) * 5000; r <= price * 1.15; r += 5000) if (r > 0) lv.push({ px: r, w: 1, round: true });
+  lv.sort((a, b) => a.px - b.px);
+  const Z = [];
+  lv.forEach(l => {
+    const z = Z[Z.length - 1];
+    if (z && l.px <= z.mid * 1.008) { z.items.push(l); z.w += l.w; z.mid = z.items.reduce((s, x) => s + x.px, 0) / z.items.length; }
+    else Z.push({ items: [l], w: l.w, mid: l.px });
+  });
+  return Z.map(z => {
+    const ps = z.items.map(x => x.px), lo = Math.min(...ps, z.mid * 0.9985), hi = Math.max(...ps, z.mid * 1.0015);
+    return { lo, hi, mid: z.mid, w: z.w, round: z.items.some(x => x.round), touches: z.items.filter(x => !x.round).length };
+  }).filter(z => z.w >= 3 && z.mid > price * 0.85 && z.mid < price * 1.15);
+}
+function zoneSides(price) {
+  const Z = D.zones;
+  return {
+    res: Z.filter(z => z.lo > price).sort((a, b) => a.lo - b.lo),
+    sup: Z.filter(z => z.hi < price).sort((a, b) => b.hi - a.hi),
+    inside: Z.find(z => z.lo <= price && z.hi >= price)
+  };
+}
+const maxW = () => Math.max(1, ...D.zones.map(z => z.w));
+const strength = w => w >= 0.66 * maxW() ? ["sterk", "●●●"] : w >= 0.4 * maxW() ? ["middel", "●●○"] : ["zwak", "●○○"];
+function renderZones() {
+  const p = D.live, S = zoneSides(p);
+  const row = (z, side) => { const [t, dots] = strength(z.w), ref = side === "r" ? z.lo : z.hi;
+    return `<tr><td class="${side === "r" ? "v" : "k"}">${side === "r" ? "weerstand" : "steun"}</td><td>${fmt(z.lo)} – ${fmt(z.hi)}</td><td class="${side === "r" ? "v" : "k"}">${pc(ref / p - 1)}</td><td title="${t}">${dots}</td></tr>`; };
+  let h = `<table class="tf"><thead><tr><th></th><th>Zone</th><th>Afstand</th><th>Kracht</th></tr></thead><tbody>` +
+    S.res.slice(0, 3).reverse().map(z => row(z, "r")).join("") +
+    `<tr><td colspan="4" class="n" style="text-align:center;">── koers ${fmt(p)}${S.inside ? ` · zit nu in de zone ${fmt(S.inside.lo)} – ${fmt(S.inside.hi)}` : ""} ──</td></tr>` +
+    S.sup.slice(0, 3).map(z => row(z, "s")).join("") + `</tbody></table>`;
+  h += `<div class="small" style="margin-top:6px;">Zones komen uit toppen en bodems op 4-uurs en dagkaarsen, plus ronde bedragen (per €5.000). ●●● = de sterkste zones in beeld: daar keerde de koers het vaakst, vooral op dagkaarsen. Een zone is een gebied waar de koers vaak reageert, geen harde muur.</div>`;
+  document.getElementById("zones").innerHTML = h;
+}
+
 /* ---------- tonen ---------- */
 function render() {
   const { h4, d1, R, live, src } = D, i = h4.length - 1, pos = loadPos();
@@ -183,10 +237,16 @@ function render() {
       word = "VERKOPEN"; col = "#ff4d4d";
       why = last.close < R.e21[i] ? `De laatste 4-uurs kaars sloot op ${fmt(last.close)}, onder EMA 21 (${fmt(R.e21[i])}). De korte trend is gebroken.`
         : `De dag sloot onder het 50-daags gemiddelde (${fmt(d.e50)}). De grote trend is omgeslagen.`;
-    } else { word = "HOUDEN"; col = "#33ff99"; why = `De trend is intact. Verkopen pas als een 4-uurs kaars sluit onder EMA 21, nu ${fmt(R.e21[i])}.`; }
+    } else {
+      word = "HOUDEN"; col = "#33ff99"; why = `De trend is intact. Verkopen pas als een 4-uurs kaars sluit onder EMA 21, nu ${fmt(R.e21[i])}.`;
+      const Sz = zoneSides(live);
+      if (Sz.res[0]) why += `<br><span class="m">Volgende weerstand ${fmt(Sz.res[0].lo)}${Sz.sup[0] ? ` · steun ${fmt(Sz.sup[0].hi)}` : ""}</span>`;
+    }
     why += `<br><span class="m">Jouw aankoop ${fmt(pos.price)} · nu <span class="${pl >= 0 ? "k" : "v"}">${pc(pl)}</span></span>`;
   } else if (b.trend && b.cross && b.fresh && b.candle) {
     word = "KOPEN"; col = "#33ff99"; why = "Alle vier de voorwaarden kloppen. Koop nu, en tik daarna op <b>Ik heb gekocht</b> zodat de terminal weet wanneer je moet verkopen.";
+    const r1 = zoneSides(live).res[0];
+    if (r1) why += `<br><span class="${r1.lo / live - 1 < 0.015 ? "n" : "m"}">Eerste weerstand ${fmt(r1.lo)} (${pc(r1.lo / live - 1)})${r1.lo / live - 1 < 0.015 ? ": weinig ruimte, de koers kan daar eerst stuiten." : "."}</span>`;
   } else {
     word = "WACHTEN"; col = "#ffb000";
     why = !b.trend ? "De grote trend is omlaag. Niet kopen tot de dag weer boven het 50-daags gemiddelde sluit."
@@ -218,7 +278,7 @@ function render() {
     : `<div class="label">JOUW POSITIE</div><div class="m">Je hebt (volgens de terminal) geen BTC. Gekocht? Vul de prijs in.</div><input id="buyPx" type="number" inputmode="decimal" placeholder="aankoopprijs in euro" value="${Math.round(live)}"><button class="go" onclick="bought()">Ik heb gekocht</button>`;
   const T = D.T;
   document.getElementById("track").innerHTML = `<b>Terugblik ${T.days} dagen</b> met precies deze regels (0,25% kosten per aan- en verkoop): ${T.trades} afgeronde trades, ${T.wins} met winst, resultaat <span class="${T.eq >= 1 ? "k" : "v"}">${pc(T.eq - 1)}</span>. Gewoon vasthouden in dezelfde periode: <span class="${T.hold >= 1 ? "k" : "v"}">${pc(T.hold - 1)}</span>.`;
-  renderTfs(); renderChart();
+  renderZones(); renderTfs(); renderChart();
   document.getElementById("meta").textContent = `bron ${src} · bijgewerkt ${new Date().toLocaleTimeString("nl-NL", { hour: "2-digit", minute: "2-digit" })}`;
 }
 const TF = [["15m", "15 min", "15-MINUTEN"], ["1h", "1 uur", "1-UURS"], ["4h", "4 uur", "4-UURS"], ["1d", "1 dag", "DAG"]];
@@ -247,6 +307,12 @@ function renderChart() {
   const s = h4.slice(a), hi = Math.max(...s.map(x => x.high), ...f.e21.slice(a)), lo = Math.min(...s.map(x => x.low), ...f.e21.slice(a));
   const x = k => pad + (k + 0.5) * (W - 2 * pad) / n, y = v => pad + (1 - (v - lo) / (hi - lo)) * (H - 2 * pad), bw = (W - 2 * pad) / n * 0.6;
   let g = "";
+  D.zones.filter(z => z.hi > lo && z.lo < hi).forEach(z => {
+    const res = z.mid > D.live, col = res ? "#ff4d4d" : "#33ff99", op = z.w >= 0.66 * maxW() ? 0.22 : z.w >= 0.4 * maxW() ? 0.14 : 0.08;
+    const y1 = y(Math.min(z.hi, hi)), y2 = y(Math.max(z.lo, lo));
+    g += `<rect x="${pad}" y="${y1}" width="${W - 2 * pad}" height="${Math.max(2, y2 - y1)}" fill="${col}" fill-opacity="${op}"/>`;
+    g += `<text x="${W - pad - 2}" y="${y1 - 2}" text-anchor="end" fill="${col}" fill-opacity="0.8" font-size="10" font-family="monospace">${fmt(z.mid)}</text>`;
+  });
   s.forEach((c, k) => {
     const up = c.close >= c.open, col = up ? "#33ff99" : "#ff4d4d";
     g += `<line x1="${x(k)}" x2="${x(k)}" y1="${y(c.high)}" y2="${y(c.low)}" stroke="${col}" stroke-width="1"/>`;
@@ -277,6 +343,7 @@ async function load() {
     const R = build(a.closed, b.closed);
     D = { h4: a.closed, d1: b.closed, R, live: q.live || a.live, src: a.src, tf: { "15m": q.closed, "1h": h.closed, "4h": a.closed, "1d": b.closed } };
     D.T = track(a.closed, R);
+    D.zones = buildZones(a.closed, b.closed, D.live);
     render();
   } catch (e) { err.style.display = "block"; err.textContent = "Kon geen koersdata ophalen: " + e.message + ". Probeer het straks opnieuw."; }
 }
