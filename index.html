@@ -5,1392 +5,340 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="BTC Pro">
+<meta name="apple-mobile-web-app-title" content="BTC Trend">
 <meta name="theme-color" content="#070b08">
-<title>BTC Pro Terminal</title>
+<title>BTC Trend Terminal</title>
 <style>
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   html { -webkit-text-size-adjust: 100%; }
   body {
-    margin: 0;
-    min-height: 100vh;
-    min-height: 100dvh;
-    background: #070b08;
-    color: #c9e6d3;
+    margin: 0; min-height: 100vh; min-height: 100dvh; background: #070b08; color: #c9e6d3;
     font-family: ui-monospace, SFMono-Regular, "JetBrains Mono", "Courier New", monospace;
     padding: 16px 12px 32px;
-    padding-top: max(16px, env(safe-area-inset-top));
-    padding-bottom: max(32px, env(safe-area-inset-bottom));
-    padding-left: max(12px, env(safe-area-inset-left));
-    padding-right: max(12px, env(safe-area-inset-right));
+    padding-top: max(16px, env(safe-area-inset-top)); padding-bottom: max(32px, env(safe-area-inset-bottom));
+    padding-left: max(12px, env(safe-area-inset-left)); padding-right: max(12px, env(safe-area-inset-right));
   }
-  .wrap { max-width: 960px; margin: 0 auto; }
+  .wrap { max-width: 860px; margin: 0 auto; }
   .panel { border: 1px solid #1e3327; margin-bottom: 12px; }
   .header { padding: 10px 14px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; }
   .ticker-label { color: #ffb000; font-size: 12px; letter-spacing: 2px; }
-  .price { font-size: 22px; font-weight: 700; }
-  .cursor { color: #33ff99; margin-left: 6px; }
+  .price { font-size: 22px; font-weight: 700; margin-left: 10px; }
   .meta { font-size: 10.5px; color: #5a7a63; }
-  .intervals { display: flex; gap: 6px; margin: 0 0 10px; flex-wrap: wrap; }
-  button {
-    background: transparent; color: #5a7a63; border: 1px solid #1e3327;
-    padding: 9px 14px; font-family: inherit; font-size: 13px; cursor: pointer; min-height: 38px;
-  }
-  button.active { background: #153322; color: #33ff99; }
-  button.primary { color: #c9e6d3; border-color: #2c4a38; }
-  button.long { color: #33ff99; border-color: #1f5c3a; }
-  button.short { color: #ff6b6b; border-color: #5c1f1f; }
-  .error { border: 1px solid #ff4d4d; color: #ff4d4d; padding: 12px; font-size: 12px; margin-bottom: 10px; display: none; }
-  .badge { padding: 18px 14px; text-align: center; background: #0c130e; }
+  .badge { padding: 20px 14px; text-align: center; background: #0c130e; }
   .badge-label { font-size: 10.5px; color: #5a7a63; letter-spacing: 3px; margin-bottom: 6px; }
-  .badge-signal { font-size: 28px; font-weight: 800; letter-spacing: 1px; line-height: 1.2; }
-  .badge-sub { font-size: 12px; margin-top: 8px; color: #c9e6d3; line-height: 1.5; }
-  .badge-add { font-size: 11px; margin-top: 6px; color: #5a7a63; }
+  .badge-signal { font-size: 30px; font-weight: 800; letter-spacing: 1px; line-height: 1.2; }
+  .badge-sub { font-size: 12px; margin-top: 8px; line-height: 1.6; }
+  .trust { display: inline-block; padding: 3px 10px; border: 1px solid; margin-top: 10px; font-weight: 700; letter-spacing: 1px; font-size: 12px; }
   .section { padding: 14px; font-size: 12px; line-height: 1.7; }
   .label { color: #5a7a63; letter-spacing: 2px; margin-bottom: 8px; font-size: 11px; }
-  table.tf { width: 100%; border-collapse: collapse; font-size: 13px; }
-  table.tf td, table.tf th { padding: 6px 4px; text-align: left; border-bottom: 1px solid #13221a; }
-  table.tf th { color: #5a7a63; font-weight: 400; font-size: 11px; }
-  .k { color: #33ff99; } .v { color: #ff4d4d; } .n { color: #ffb000; }
-  .warn { color: #ff4d4d; }
-  .muted { color: #5a7a63; }
-  .formgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
-  .formgrid label { font-size: 11px; color: #5a7a63; display: flex; flex-direction: column; gap: 4px; }
-  input[type=number], select {
-    background: #0c130e; color: #c9e6d3; border: 1px solid #1e3327; width: 100%;
-    padding: 8px 10px; font-family: inherit; font-size: 16px; min-height: 38px; border-radius: 0;
-  }
-  .btnrow { margin-top: 10px; display: flex; gap: 8px; flex-wrap: wrap; }
+  .k { color: #33ff99; } .v { color: #ff4d4d; } .n { color: #ffb000; } .muted { color: #5a7a63; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  .grid2 div { border: 1px solid #13221a; padding: 6px 8px; }
+  .grid2 span { display: block; font-size: 10.5px; color: #5a7a63; }
+  .grid2 b { font-size: 14px; }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  td, th { padding: 6px 4px; text-align: left; border-bottom: 1px solid #13221a; vertical-align: top; }
+  th { color: #5a7a63; font-weight: 400; font-size: 10.5px; }
+  tr.pick td { background: #10301d; }
   .scroll { overflow-x: auto; }
-  #grid { display: grid; grid-template-columns: 70px repeat(9, minmax(26px, 1fr)); gap: 2px; font-size: 11px; min-width: 330px; }
-  #grid div { display: flex; align-items: center; justify-content: center; min-height: 28px; }
-  #grid .hd { color: #5a7a63; }
-  #grid .me { outline: 2px solid #ffffff; outline-offset: -2px; }
-  .legend { font-size: 10.5px; color: #5a7a63; display: flex; gap: 12px; margin-top: 8px; flex-wrap: wrap; }
-  .chartbox { padding: 8px; }
+  button { background: transparent; color: #c9e6d3; border: 1px solid #2c4a38; padding: 9px 14px; font-family: inherit; font-size: 13px; min-height: 38px; cursor: pointer; }
+  input[type=number] { background: #0c130e; color: #c9e6d3; border: 1px solid #1e3327; width: 100%; padding: 8px 10px; font-family: inherit; font-size: 16px; border-radius: 0; }
+  .formgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
+  .formgrid label { font-size: 11px; color: #5a7a63; display: flex; flex-direction: column; gap: 4px; }
+  .btnrow { margin-top: 10px; display: flex; gap: 8px; flex-wrap: wrap; }
+  .error { border: 1px solid #ff4d4d; color: #ff4d4d; padding: 12px; font-size: 12px; margin-bottom: 10px; display: none; }
+  .legend { font-size: 10.5px; color: #5a7a63; display: flex; gap: 12px; margin-top: 6px; flex-wrap: wrap; }
   svg { display: block; width: 100%; height: auto; }
-  .entrygrid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-  .entry { border: 1px solid #1e3327; padding: 10px; }
-  .entry h3 { margin: 0 0 4px; font-size: 13px; letter-spacing: 2px; }
-  .entry .st { font-weight: 700; font-size: 14px; margin-bottom: 6px; }
-  .entry .ck { font-size: 11.5px; line-height: 1.6; }
-  .entry .sg { font-size: 11px; color: #5a7a63; margin-top: 6px; }
-  @media (max-width: 480px) { .entrygrid { grid-template-columns: 1fr; } }
-  .plangrid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 8px; }
-  .plangrid div { border: 1px solid #13221a; padding: 6px 8px; }
-  .plangrid span { display: block; font-size: 10.5px; color: #5a7a63; }
-  .plangrid b { font-size: 14px; }
-  .risk { display: inline-block; padding: 3px 10px; border: 1px solid; margin: 6px 0 4px; font-weight: 700; letter-spacing: 1px; }
-  .lvrow { display: grid; grid-template-columns: 1fr auto 60px; gap: 8px; padding: 3px 0; border-bottom: 1px solid #13221a; }
-  .lvrow.now { color: #ffb000; font-weight: 700; }
-  table.bt td { vertical-align: top; font-size: 12px; }
-  table.bt tr { cursor: pointer; }
-  table.bt tr.sel td { background: #10301d; }
-  .btdetail { border: 1px solid #1e3327; padding: 10px; margin-top: 10px; }
-  button:disabled { opacity: .5; cursor: default; }
   .disclaimer { font-size: 10px; color: #3f5b48; margin-top: 16px; line-height: 1.6; }
-  @media (max-width: 480px) {
-    body { padding-left: max(8px, env(safe-area-inset-left)); padding-right: max(8px, env(safe-area-inset-right)); }
-    .price { font-size: 19px; }
-    .badge-signal { font-size: 23px; }
-    .intervals button { flex: 1 1 auto; text-align: center; }
-  }
+  @media (max-width: 480px) { .price { font-size: 19px; } .badge-signal { font-size: 25px; } td, th { font-size: 11px; padding: 5px 3px; } }
 </style>
 </head>
 <body>
 <div class="wrap">
-
   <div class="panel header">
-    <div style="display:flex; align-items:baseline;">
-      <span class="ticker-label">BTC/EUR · PRO</span>
-      <span class="price" id="price" style="margin-left:10px;">----</span>
-      <span class="cursor" id="cursor">█</span>
-    </div>
+    <div style="display:flex;align-items:baseline;"><span class="ticker-label">BTC/EUR · TREND</span><span class="price" id="price">----</span></div>
     <div class="meta" id="meta">verbinden...</div>
   </div>
-
-  <div class="error" id="priceWarn"></div>
   <div class="error" id="error"></div>
 
   <div class="panel badge" id="badge">
-    <div class="badge-label" id="badgeLabel">ADVIES</div>
+    <div class="badge-label">ADVIES VOOR VANDAAG</div>
     <div class="badge-signal" id="advice" style="color:#ffb000;">LADEN...</div>
     <div class="badge-sub" id="adviceSub"></div>
-    <div class="badge-add" id="adviceAdd"></div>
-  </div>
-
-  <div class="panel section" id="planPanel" style="display:none;">
-    <div class="label" id="planLabel">PLAN</div>
-    <div id="planBody"></div>
+    <div id="trust"></div>
   </div>
 
   <div class="panel section">
-    <div class="label">INSTAP-CHECK · LONG EN SHORT</div>
-    <div id="entryNote" class="muted" style="margin-bottom:8px;"></div>
-    <div class="entrygrid" id="entryGrid"><div class="muted">laden...</div></div>
+    <div class="label">WAT ZOU HET ADVIES DOEN OMSLAAN</div>
+    <div id="trigger" class="muted">laden...</div>
   </div>
 
   <div class="panel section">
-    <div class="label">SIGNALEN PER TIMEFRAME</div>
-    <table class="tf">
-      <thead><tr><th>TF</th><th>Signaal</th><th>Trend</th><th>RSI</th></tr></thead>
-      <tbody id="tfBody"><tr><td colspan="4" class="muted">laden...</td></tr></tbody>
-    </table>
+    <div class="label">BEWIJS · GEKOZEN REGEL TEGENOVER VASTHOUDEN</div>
+    <div id="proof" class="muted">laden...</div>
+    <svg id="chart" viewBox="0 0 900 300"></svg>
+    <div class="legend"><span class="k">── gekozen regel</span><span>- - BTC vasthouden</span><span>│ einde leerperiode</span><span>log-schaal</span></div>
   </div>
 
   <div class="panel section">
-    <div class="label">JOUW POSITIE</div>
-    <div id="posBody"></div>
-    <div class="btnrow" id="posActions"></div>
-    <div id="posForm"></div>
-  </div>
-
-  <div class="panel section">
-    <div class="label" id="matrixLabel">BESLISMATRIX</div>
-    <div class="intervals" id="matrixToggle"></div>
-    <div class="scroll"><div id="grid"></div></div>
-    <div class="legend" id="matrixLegend"></div>
-  </div>
-
-  <div class="intervals" id="intervals">
-    <button data-iv="15m">15m</button>
-    <button data-iv="1h" class="active">1u</button>
-    <button data-iv="4h">4u</button>
-    <button data-iv="1d">1d</button>
-    <button id="refreshBtn">↻ ververs</button>
-  </div>
-
-  <div class="panel chartbox">
-    <svg id="chart" viewBox="0 0 900 320" width="100%"></svg>
-    <div class="legend">
-      <span style="color:#ffb000;">── EMA9</span>
-      <span style="color:#7fb3ff;">── EMA21</span>
-      <span style="color:#ff6b6b;">- - stop</span>
-      <span style="color:#c9e6d3;">- - instap</span>
-      <span style="color:#33ff99;">- - doel</span>
-      <span style="color:#7a8f80;">▒ steun/weerstand</span>
-      <span id="rsiLabel">RSI(14): -</span>
-    </div>
-    <svg id="volumeChart" viewBox="0 0 900 70" width="100%" style="margin-top:8px;"></svg>
-    <div class="legend"><span>Volume · stippellijn = 20-candle gemiddelde</span></div>
-  </div>
-
-  <div class="panel section">
-    <div class="label" id="reasonLabel">REDENERING</div>
-    <div id="reasons"></div>
-  </div>
-
-  <div class="panel section">
-    <div class="label">STEUN &amp; WEERSTAND · UIT DE CANDLES</div>
-    <div id="levels" class="muted">laden...</div>
-  </div>
-
-  <div class="panel section" id="btPanel">
-    <div class="label">TERUGTEST · ZELFDE REGELS OP ECHTE HISTORIE</div>
-    <div class="muted" style="margin-bottom:8px;">Speelt de signaalregels van deze terminal kwartier voor kwartier af op echte BTC/EUR-candles, met één positie tegelijk en Bitvavo-kosten. Daarna worden 16 combinaties van stop, instap, uitstap en trendfilter naast elkaar gezet, zodat je op honderden trades kiest in plaats van op een handvol.</div>
-    <div class="btnrow" style="margin-top:0;">
-      <select id="btDays" style="width:auto;"><option value="90">90 dagen</option><option value="180" selected>180 dagen</option><option value="365">365 dagen</option></select>
-      <button class="primary" id="btBtn" onclick="runBacktest()">terugtest starten</button>
-    </div>
-    <div id="btStatus" class="n" style="margin-top:8px;"></div>
-    <div id="btBody" style="margin-top:8px;"></div>
-  </div>
-
-  <div class="panel section">
-    <div class="label">SCHADUWLOGBOEK</div>
-    <div class="muted" style="margin-bottom:8px;">Elk instapsignaal wordt vastgelegd en later nagerekend met de echte koers: gevuld of niet, en eerst stop of eerst doel. Signalen die de nieuwe filters tegenhielden worden ook gevolgd, zodat je ziet of die filters helpen.</div>
-    <div id="logBody"></div>
-    <div class="btnrow"><button onclick="clearLog()">logboek wissen</button></div>
+    <div class="label">ALLE GETESTE REGELS</div>
+    <div class="muted" style="margin-bottom:6px;">Gekozen op de leerperiode alleen. De controleperiode heeft bij de keuze niet meegeteld.</div>
+    <div class="scroll" id="table"></div>
   </div>
 
   <div class="panel section">
     <div class="label">INSTELLINGEN</div>
-    <div class="btnrow" style="margin-top:0;"><button class="primary" id="setBtn" onclick="toggleSettings()">instellingen tonen</button></div>
-    <div id="setForm"></div>
+    <div class="formgrid">
+      <label>Fee per wissel %<input type="number" id="sFee" step="0.01" inputmode="decimal"></label>
+      <label>Leenrente short % per dag<input type="number" id="sBorrow" step="0.001" inputmode="decimal"></label>
+    </div>
+    <div class="btnrow"><button onclick="saveSet()">Opslaan en opnieuw testen</button><button onclick="load()">↻ ververs</button></div>
   </div>
 
   <div class="disclaimer">
-    Twee soorten instap: een terugval naar de 1u-EMA21 of steun binnen een trend op 1u en 4u, bevestigd door een 15m-omslag (een oudere omslag telt nog zolang de koers sindsdien minder dan 1× de 1u-ATR is gelopen); en de originele
-    EMA9/EMA21-kruising (in de laatste 3 gesloten candles + RSI14 + volume, per timeframe bevestigd door de hogere timeframe; de lopende candle telt niet mee),
-    gecombineerd met je eigen beslismatrix. Daarbovenop: instaptiming (niet achter een uitgerekte beweging aan), steun en weerstand uit dezelfde candles,
-    winst/risico na Bitvavo-kosten, positiegrootte en een risicolabel. De liquidatieprijs is een grove schatting zonder onderhoudsmarge,
-    fees en funding; de echte liquidatie ligt dichter bij je instap. Kijk altijd op je exchange.
-    De terugtest gebruikt exact dezelfde regels als het live advies, maar het verleden garandeert niets voor de toekomst.
-    Geen financieel advies. Margin vergroot winst én verlies; je kunt je hele inleg verliezen.
+    Hoe dit werkt: de app haalt alle BTC/EUR-dagcandles op en test een vaste, kleine set gangbare trendregels, elk als long/euro en als long/short.
+    Een signaal ontstaat op het dagslot (00:00 UTC) en wordt uitgevoerd op de opening van de volgende dag; fees per wissel en leenrente op shorts tellen mee.
+    De regel met de beste verhouding tussen rendement en diepste daling in de leerperiode (t/m 2022) wordt gekozen; de controleperiode (vanaf 2023) toont of dat standhoudt.
+    Slippage en belasting zitten er niet in. Het verleden garandeert niets voor de toekomst. Geen financieel advies.
   </div>
-
 </div>
 
 <script>
-const IVS = ["15m", "1h", "4h", "1d"];
-const KRAKEN_MINUTES = { "15m": 15, "1h": 60, "4h": 240, "1d": 1440 };
-const IV_LABEL = { "15m": "15M", "1h": "1U", "4h": "4U", "1d": "1D" };
-const PARENT = { "15m": "1h", "1h": "4h", "4h": "1d", "1d": null };
-const POS_KEY = "btc_pro_position";
-const LOG_KEY = "btc_pro_log", SET_KEY = "btc_pro_settings";
-const COIN = { binance: "BTCEUR", kraken: "XBTEUR", bitvavo: "BTC-EUR" };
-const IV_MS = { "15m": 900000, "1h": 3600000, "4h": 14400000, "1d": 86400000 };
-let SIM_NOW = null; // gezet tijdens de terugtest: dan rekent alles alsof het dat moment is
+const COIN = { bitvavo: "BTC-EUR", binance: "BTCEUR" };
+const DAY = 864e5, SPLIT = Date.UTC(2023, 0, 1), SET_KEY = "btc_trend_settings";
+const DEF = { fee: 0.25, borrow: 0.03 };
+let SET = (() => { try { return Object.assign({}, DEF, JSON.parse(localStorage.getItem(SET_KEY) || "{}")); } catch (e) { return Object.assign({}, DEF); } })();
+let S = { candles: null, src: "", res: null };
 
-let state = {
-  data: {}, source: null, sources: {}, check: null, lastUpdate: null,
-  chartIv: "1h", pos: loadPos(), formOpen: false, matrixView: "long", timer: null, setOpen: false, plan: null, zones: []
-};
-
-function fmt(n) { return n.toLocaleString("nl-NL", { maximumFractionDigits: 0 }); }
-function pct(n) { return (n >= 0 ? "+" : "") + n.toFixed(2) + "%"; }
-
-/* ---------- positie ---------- */
-function loadPos() {
-  try { const r = localStorage.getItem(POS_KEY); return r ? JSON.parse(r) : null; } catch (e) { return null; }
-}
-function storePos(p) {
-  try { if (p) localStorage.setItem(POS_KEY, JSON.stringify(p)); else localStorage.removeItem(POS_KEY); } catch (e) {}
-  state.pos = p;
-}
-function quickOpen(side) {
-  const price = currentPrice();
-  if (!price) return;
-  const ss = suggestStop(side);
-  storePos({ side, entry: price, stop: ss ? Math.round(ss) : null, lev: 1, date: new Date().toISOString() });
-  state.formOpen = true; // direct stop invullen
-  render();
-}
-function closePos() {
-  if (!confirm("Positie als gesloten markeren?")) return;
-  storePos(null); state.formOpen = false; render();
-}
-function toggleForm() { state.formOpen = !state.formOpen; render(); }
-function saveForm() {
-  const side = document.getElementById("fSide").value;
-  const entry = parseFloat(document.getElementById("fEntry").value);
-  const stopRaw = parseFloat(document.getElementById("fStop").value);
-  const lev = parseFloat(document.getElementById("fLev").value) || 1;
-  if (!entry || entry <= 0) { alert("Vul een geldige instapprijs in."); return; }
-  const stop = stopRaw > 0 ? stopRaw : null;
-  if (stop && side === "long" && stop >= entry) { alert("Bij een long ligt de stop onder je instapprijs."); return; }
-  if (stop && side === "short" && stop <= entry) { alert("Bij een short ligt de stop boven je instapprijs."); return; }
-  const prev = state.pos;
-  storePos({ side, entry, stop, lev, tgt: prev && prev.side === side ? prev.tgt : undefined, size: prev && prev.side === side ? prev.size : undefined, date: prev ? prev.date : new Date().toISOString() });
-  state.formOpen = false; render();
-}
-function liqPrice(p) {
-  if (!p || !p.lev || p.lev <= 1) return null;
-  return p.side === "long" ? p.entry * (1 - 1 / p.lev) : p.entry * (1 + 1 / p.lev);
-}
-
-/* ---------- indicatoren ---------- */
-function calcEMA(values, period) {
-  const k = 2 / (period + 1), ema = [];
-  values.forEach((v, i) => ema.push(i === 0 ? v : v * k + ema[i - 1] * (1 - k)));
-  return ema;
-}
-function calcRSI(values, period = 14) {
-  const rsi = new Array(values.length).fill(null);
-  if (values.length <= period) return rsi;
-  let gains = 0, losses = 0;
-  for (let i = 1; i <= period; i++) { const d = values[i] - values[i - 1]; if (d >= 0) gains += d; else losses -= d; }
-  let ag = gains / period, al = losses / period;
-  rsi[period] = 100 - 100 / (1 + (al === 0 ? 100 : ag / al));
-  for (let i = period + 1; i < values.length; i++) {
-    const d = values[i] - values[i - 1];
-    ag = (ag * (period - 1) + (d > 0 ? d : 0)) / period;
-    al = (al * (period - 1) + (d < 0 ? -d : 0)) / period;
-    rsi[i] = 100 - 100 / (1 + (al === 0 ? 100 : ag / al));
-  }
-  return rsi;
-}
+const fmt = n => n.toLocaleString("nl-NL", { maximumFractionDigits: 0 });
+const pc = (v, d = 0) => (v >= 0 ? "+" : "") + (v * 100).toFixed(d).replace(".", ",") + "%";
+const dt = t => new Date(t).toLocaleDateString("nl-NL", { day: "numeric", month: "short", year: "numeric" });
 
 /* ---------- data ---------- */
-/* Bronvolgorde: Bitvavo (de beurs waar je handelt), dan Kraken, dan Binance.
-   Een bron met verouderde candles wordt overgeslagen. */
-function checkFresh(src, iv, candles) {
-  candles = candles.filter(c => isFinite(c.time) && c.close > 0).sort((a, b) => a.time - b.time);
-  if (candles.length < 30) throw new Error(`${src}: te weinig candles`);
-  const last = candles[candles.length - 1].time;
-  if (Date.now() - last > 2 * IV_MS[iv] + 120000)
-    throw new Error(`${src}: verouderde koersen (laatste ${new Date(last).toLocaleString("nl-NL", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })})`);
-  return candles;
-}
-async function fetchFromBitvavo(iv) {
-  const res = await fetch(`https://api.bitvavo.com/v2/${COIN.bitvavo}/candles?interval=${iv}&limit=500`, { cache: "no-store" });
-  if (!res.ok) throw new Error(`Bitvavo HTTP ${res.status}`);
-  const raw = await res.json();
-  if (!Array.isArray(raw) || !raw.length) throw new Error("Bitvavo: lege response");
-  return checkFresh("Bitvavo", iv, raw.map(k => ({ time: +k[0], open: +k[1], high: +k[2], low: +k[3], close: +k[4], volume: +k[5] })));
-}
-async function fetchFromBinance(iv) {
-  const res = await fetch(`https://api.binance.com/api/v3/klines?symbol=${COIN.binance}&interval=${iv}&limit=500`, { cache: "no-store" });
-  if (!res.ok) throw new Error(`Binance HTTP ${res.status}`);
-  const raw = await res.json();
-  if (!Array.isArray(raw) || !raw.length) throw new Error("Binance: lege response");
-  return checkFresh("Binance", iv, raw.map(k => ({ time: k[0], open: +k[1], high: +k[2], low: +k[3], close: +k[4], volume: +k[5] })));
-}
-async function fetchFromKraken(iv) {
-  const res = await fetch(`https://api.kraken.com/0/public/OHLC?pair=${COIN.kraken}&interval=${KRAKEN_MINUTES[iv]}`, { cache: "no-store" });
-  if (!res.ok) throw new Error(`Kraken HTTP ${res.status}`);
-  const data = await res.json();
-  if (data.error && data.error.length) throw new Error("Kraken: " + data.error.join("; "));
-  const key = Object.keys(data.result || {}).find(k => k !== "last");
-  if (!key) throw new Error("Kraken: geen candle-data");
-  return checkFresh("Kraken", iv, data.result[key].slice(-500).map(k => ({ time: k[0] * 1000, open: +k[1], high: +k[2], low: +k[3], close: +k[4], volume: +k[6] })));
-}
-async function fetchOHLC(iv) {
-  const errs = [];
-  const srcs = [["Bitvavo", fetchFromBitvavo], ["Kraken", fetchFromKraken], ["Binance", fetchFromBinance]];
-  for (const [name, fn] of srcs) {
-    try { return { candles: await fn(iv), source: name }; }
-    catch (e) { errs.push(e.message && e.message.indexOf(name) === 0 ? e.message : `${name} niet bereikbaar`); }
-  }
-  throw new Error(errs.join(" | "));
-}
-/* Actuele koers bij een tweede beurs, om de eerste te controleren. */
-async function fetchCheck(src) {
-  if (src !== "Bitvavo") {
-    const r = await fetch(`https://api.bitvavo.com/v2/ticker/price?market=${COIN.bitvavo}`, { cache: "no-store" });
-    const j = await r.json(); return { src: "Bitvavo", p: +j.price };
-  }
-  const r = await fetch(`https://api.kraken.com/0/public/Ticker?pair=${COIN.kraken}`, { cache: "no-store" });
-  const j = await r.json(); const k = Object.keys(j.result || {})[0]; return { src: "Kraken", p: +j.result[k].c[0] };
-}
-async function fetchAll() {
-  if (state.btBusy) return;
-  document.getElementById("error").style.display = "none";
-  const results = await Promise.allSettled(IVS.map(iv => fetchOHLC(iv)));
-  const failed = [], why = [];
-  results.forEach((r, i) => {
-    if (r.status === "fulfilled") { state.data[IVS[i]] = r.value.candles; state.sources[IVS[i]] = r.value.source; }
-    else { failed.push(IV_LABEL[IVS[i]]); why.push(r.reason && r.reason.message); delete state.data[IVS[i]]; delete state.sources[IVS[i]]; }
-  });
-  const used = [...new Set(Object.values(state.sources))];
-  state.source = used.join(" + ") || null;
-  if (failed.length) {
-    const el = document.getElementById("error");
-    el.style.display = "block";
-    el.textContent = `Kon geen actuele candles ophalen voor ${failed.join(", ")}. De matrix is pas betrouwbaar als alle vier de timeframes geladen zijn. Tik op ververs. (${why[0] || ""})`;
-  }
-  state.check = null;
-  const primary = state.sources["15m"] || state.sources["1h"];
-  if (primary) { try { state.check = await fetchCheck(primary); } catch (e) { state.check = null; } }
-  if (failed.length < IVS.length) state.lastUpdate = new Date();
-  render();
-}
-
-/* ---------- signaal per timeframe ---------- */
-const TURN_MAX_RUN = 1.0; // late 15m-draai telt nog als de koers sindsdien minder dan 1× de 1u-ATR is gelopen
-const LOOKBACK = 3; // kruising mag maximaal zoveel gesloten candles geleden zijn
-function computeSignal(candles) {
-  if (!candles || candles.length <= 27) return null;
-  // alleen GESLOTEN candles: de laatste candle loopt nog en geeft flikkerende signalen en te laag volume
-  const cc = candles.slice(0, -1);
-  const closes = cc.map(c => c.close);
-  const ema9 = calcEMA(closes, 9), ema21 = calcEMA(closes, 21), rsi = calcRSI(closes, 14);
-  const n = closes.length - 1, lastRSI = rsi[n];
-  const diff = i => ema9[i] - ema21[i];
-  const trendUp = diff(n) > 0;
-  let ago = null, dir = null;
-  for (let k = 0; k < LOOKBACK; k++) {
-    const i = n - k; if (i < 1) break;
-    if (diff(i - 1) <= 0 && diff(i) > 0) { ago = k; dir = "up"; break; }
-    if (diff(i - 1) >= 0 && diff(i) < 0) { ago = k; dir = "dn"; break; }
-  }
-  const vols = cc.map(c => c.volume || 0);
-  const reasons = [];
-  let signal = "N", volRatio = null;
-  const agoTxt = ago === 0 ? "op de laatste gesloten candle" : `${ago + 1} candles geleden`;
-  if (dir) {
-    const ci = n - ago;
-    const win = vols.slice(Math.max(0, ci - 20), ci);
-    const avg = win.length ? win.reduce((a, b) => a + b, 0) / win.length : 0;
-    const peak = Math.max(...vols.slice(ci, n + 1));
-    const volOk = avg > 0 ? peak > avg * 1.1 : true;
-    volRatio = avg > 0 ? peak / avg : null;
-    const volTxt = avg > 0 ? `${(peak / avg).toFixed(1)}x het 20-candle gemiddelde` : "onbekend";
-    const up = dir === "up";
-    reasons.push(`EMA9 kruiste ${up ? "opwaarts" : "neerwaarts"} door EMA21 ${agoTxt}`);
-    if (up !== trendUp) reasons.push("Kruising is alweer teruggedraaid — genegeerd");
-    else if (up && lastRSI >= 70) reasons.push(`RSI(14) = ${lastRSI.toFixed(1)} — overbought, geen koopsignaal`);
-    else if (!up && lastRSI <= 30) reasons.push(`RSI(14) = ${lastRSI.toFixed(1)} — oversold, geen verkoopsignaal`);
-    else if (!volOk) reasons.push(`Volume bevestigt niet (${volTxt})`);
-    else {
-      signal = up ? "K" : "V";
-      reasons.push(`RSI(14) = ${lastRSI.toFixed(1)} — ruimte ${up ? "naar boven" : "naar beneden"}`);
-      reasons.push(`Volume bevestigt (${volTxt})`);
-    }
-  } else {
-    reasons.push(`Geen EMA9/EMA21-kruising in de laatste ${LOOKBACK} gesloten candles`);
-    reasons.push(`RSI(14) = ${lastRSI.toFixed(1)}`);
-  }
-  reasons.push(trendUp ? "Trend: EMA9 boven EMA21 (opwaarts)" : "Trend: EMA9 onder EMA21 (neerwaarts)");
-  return { signal, reasons, rsi: lastRSI, trend: trendUp ? "up" : "dn", volRatio };
-}
-function analyze(iv) {
-  const r = computeSignal(state.data[iv]);
-  if (!r) return null;
-  const p = PARENT[iv];
-  if (!p || r.signal === "N") return r;
-  const pc = state.data[p];
-  if (!pc || pc.length < 25) { r.reasons.push(`Hogere timeframe (${IV_LABEL[p]}) niet beschikbaar — bevestiging overgeslagen`); return r; }
-  const cl = pc.slice(0, -1).map(c => c.close), e9 = calcEMA(cl, 9), e21 = calcEMA(cl, 21), np = cl.length - 1;
-  const pUp = e9[np] > e21[np];
-  if (r.signal === "K" && !pUp) { r.reasons.push(`Onderdrukt: trend op ${IV_LABEL[p]} is nog niet opwaarts`); r.signal = "N"; }
-  else if (r.signal === "V" && pUp) { r.reasons.push(`Onderdrukt: trend op ${IV_LABEL[p]} is nog niet neerwaarts`); r.signal = "N"; }
-  else r.reasons.push(`Bevestigd door hogere timeframe ${IV_LABEL[p]}`);
-  return r;
-}
-function currentPrice() {
-  const c = state.data["15m"] || state.data["1h"];
-  return c && c.length ? c[c.length - 1].close : 0;
-}
-
-/* ---------- beslismatrix ---------- */
-const S = ["K", "N", "V"];
-const FLIP = { K: "V", N: "N", V: "K" };
-const TFLIP = { up: "dn", dn: "up" };
-function baseLong(m15, h1, h4, d1) {
-  if (h1 === "V") return (h4 === "K" && d1 !== "V") ? "P" : "X";
-  if (h4 === "V" && d1 === "V") return h1 === "N" ? "P" : "T";
-  if (h4 === "V" || d1 === "V") return "T";
-  if (m15 === "V") return "W";
-  return "H";
-}
-function actLong(m15, h1, h4, d1, t) {
-  const b = baseLong(m15, h1, h4, d1);
-  if (b !== "H" && b !== "W") return b;
-  const a = t.h1 === "dn", c = t.h4 === "dn", d = t.d1 === "dn";
-  if ((a && c) || (c && d)) return "T";
-  if (a || c || d) return "W";
-  return b;
-}
-function act(side, m15, h1, h4, d1, t) {
-  if (side === "long") return actLong(m15, h1, h4, d1, t);
-  return actLong(FLIP[m15], FLIP[h1], FLIP[h4], FLIP[d1], { h1: TFLIP[t.h1], h4: TFLIP[t.h4], d1: TFLIP[t.d1] });
-}
-const CODES = {
-  H: { c: "H", col: "#33ff99", bg: "#10301d" },
-  W: { c: "H!", col: "#33ff99", bg: "#10301d" },
-  T: { c: "S", col: "#ffb000", bg: "#33280a" },
-  P: { c: "½", col: "#ff9a4d", bg: "#3a1f0c" },
-  X: { c: "X", col: "#ff4d4d", bg: "#3a1010" }
-};
-const TEXT = {
-  long: {
-    H: ["LONG VASTHOUDEN", "Niets doen, positie aanhouden."],
-    W: ["LONG VASTHOUDEN", "Nog geen actie, maar kijk vaker."],
-    T: ["STOP OMHOOG", "Zet je stop dichter onder de huidige koers."],
-    P: ["HELFT SLUITEN", "Verkoop de helft van je long, stop omhoog voor de rest."],
-    X: ["LONG SLUITEN", "Sluit de hele positie."]
-  },
-  short: {
-    H: ["SHORT VASTHOUDEN", "Niets doen, positie aanhouden."],
-    W: ["SHORT VASTHOUDEN", "Nog geen actie, maar kijk vaker."],
-    T: ["STOP OMLAAG", "Zet je stop dichter boven de huidige koers."],
-    P: ["HELFT SLUITEN", "Koop de helft van je short terug, stop omlaag voor de rest."],
-    X: ["SHORT SLUITEN", "Koop de hele positie terug."]
-  }
-};
-function addAllowed(side, sig, t) {
-  if (side === "long") return sig["1h"] === "K" && sig["4h"] !== "V" && sig["1d"] !== "V" && t.d1 === "up";
-  return sig["1h"] === "V" && sig["4h"] !== "K" && sig["1d"] !== "K" && t.d1 === "dn";
-}
-
-function suggestStop(side) {
-  const c = state.data["1h"];
-  if (!c || c.length < 14) return null;
-  const last = c.slice(-13, -1);
-  return side === "long" ? Math.min(...last.map(x => x.low)) * 0.998 : Math.max(...last.map(x => x.high)) * 1.002;
-}
-function entryCheck(side, res, t) {
-  const L = side === "long", want = L ? "K" : "V", against = L ? "V" : "K", tw = L ? "up" : "dn";
-  const W = { K: "KOPEN", V: "VERKOPEN" };
-  const checks = [
-    [`1h-signaal ${W[want]}`, res["1h"].signal === want],
-    [`4h niet op ${W[against]}`, res["4h"].signal !== against],
-    [`1d niet op ${W[against]}`, res["1d"].signal !== against],
-    [`1d-trend ${L ? "opwaarts" : "neerwaarts"}`, t.d1 === tw]
-  ];
-  const ok = checks.every(c => c[1]);
-  const near = !ok && checks.slice(1).every(c => c[1]) && res["1h"].trend === tw;
-  return { ok, near, checks };
-}
-
-/* ========== PRO-uitbreiding: timing, niveaus, plan, risico, logboek ========== */
-const DEF_SET = { capital: 1000, riskPct: 1, maxLev: 3, maker: 0.15, taker: 0.25, borrow: 0.03, minRR: 1.5 };
-function loadSet() { try { return Object.assign({}, DEF_SET, JSON.parse(localStorage.getItem(SET_KEY) || "{}")); } catch (e) { return Object.assign({}, DEF_SET); } }
-let SET = loadSet();
-function closedC(iv) { const c = state.data[iv]; return c && c.length > 1 ? c.slice(0, -1) : null; }
-function calcATR(c, n = 14) {
-  const tr = c.map((x, i) => i === 0 ? x.high - x.low : Math.max(x.high - x.low, Math.abs(x.high - c[i - 1].close), Math.abs(x.low - c[i - 1].close)));
-  let a = tr.slice(0, n).reduce((s, v) => s + v, 0) / n; const out = new Array(c.length).fill(a);
-  for (let i = n; i < c.length; i++) { a = (a * (n - 1) + tr[i]) / n; out[i] = a; }
-  return out;
-}
-function pivots(c, L, R) {
-  const hi = [], lo = [];
-  for (let i = L; i < c.length - R; i++) {
-    let H = true, Lo = true;
-    for (let j = i - L; j <= i + R; j++) { if (j === i) continue; if (c[j].high >= c[i].high) H = false; if (c[j].low <= c[i].low) Lo = false; }
-    if (H) hi.push(c[i].high); if (Lo) lo.push(c[i].low);
-  }
-  return { hi, lo };
-}
-function buildZones(price) {
-  const h1 = closedC("1h"), h4 = closedC("4h"), d1 = closedC("1d");
-  if (!h1 || !h4 || !d1 || h1.length < 30) return [];
-  const atr1 = calcATR(h1).at(-1), raw = [];
-  const p1 = pivots(h1.slice(-300), 4, 4); p1.hi.forEach(p => raw.push([p, 1, "1u-top"])); p1.lo.forEach(p => raw.push([p, 1, "1u-dal"]));
-  const p4 = pivots(h4.slice(-200), 3, 3); p4.hi.forEach(p => raw.push([p, 2, "4u-top"])); p4.lo.forEach(p => raw.push([p, 2, "4u-dal"]));
-  const y = d1[d1.length - 1]; raw.push([y.high, 2, "gisteren hoog"], [y.low, 2, "gisteren laag"]);
-  const now = SIM_NOW ? new Date(SIM_NOW) : new Date(), dow = (now.getUTCDay() + 6) % 7;
-  const wk = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()) - dow * 864e5;
-  const pw = d1.filter(c => c.time >= wk - 7 * 864e5 && c.time < wk);
-  if (pw.length) raw.push([Math.max(...pw.map(c => c.high)), 3, "vorige week hoog"], [Math.min(...pw.map(c => c.low)), 3, "vorige week laag"]);
-  for (let r = Math.floor(price * 0.92 / 1000) * 1000; r <= price * 1.08; r += 1000) raw.push([r, 1, "rond getal"]);
-  const tol = Math.max(0.3 * atr1, price * 0.0025), zones = [];
-  raw.filter(x => x[0] > price * 0.88 && x[0] < price * 1.12).sort((a, b) => a[0] - b[0]).forEach(([p, w, src]) => {
-    const z = zones[zones.length - 1];
-    if (z && p - z.hi <= tol) { z.hi = Math.max(z.hi, p); z.w += w; z.srcs.add(src); }
-    else zones.push({ lo: p, hi: p, w, srcs: new Set([src]) });
-  });
-  zones.forEach(z => { if (z.hi - z.lo < tol * 0.4) { z.lo -= tol * 0.2; z.hi += tol * 0.2; } z.mid = (z.lo + z.hi) / 2; z.label = [...z.srcs].join(", "); });
-  return zones;
-}
-function nlNow() {
-  const parts = new Intl.DateTimeFormat("nl-NL", { timeZone: "Europe/Amsterdam", weekday: "short", hour: "numeric", hourCycle: "h23" }).formatToParts(SIM_NOW ? new Date(SIM_NOW) : new Date());
-  const g = t => (parts.find(p => p.type === t) || {}).value || "";
-  const hour = parseInt(g("hour"), 10), wd = g("weekday").toLowerCase();
-  return { night: hour >= 1 && hour < 8, weekend: wd.startsWith("za") || wd.startsWith("zo") };
-}
-function pullbackCheck(side, res, t) {
-  const L = side === "long", tw = L ? "up" : "dn", sg = L ? 1 : -1;
-  const h1 = closedC("1h"), m15 = closedC("15m"), out = { ok: false, near: false, checks: [] };
-  if (!h1 || !m15 || h1.length < 30 || m15.length < 30 || !res["1h"] || !res["4h"] || !res["1d"]) return out;
-  const A = calcATR(h1).at(-1), e21 = calcEMA(h1.map(c => c.close), 21), n = h1.length - 1;
-  // terugval: in de laatste 4 gesloten 1u-candles raakte de koers de 1u-EMA21 of een steun/weerstand
-  let touched = false, where = "";
-  for (let i = n - 3; i <= n && !touched; i++) {
-    const c = h1[i], ext = L ? c.low : c.high;
-    if (sg * (ext - e21[i]) <= 0.25 * A) { touched = true; where = "1u-EMA21"; break; }
-    const z = state.zones.find(z => z.w >= 2 && (L ? (z.mid < c.close && ext <= z.hi + 0.25 * A) : (z.mid > c.close && ext >= z.lo - 0.25 * A)));
-    if (z) { touched = true; where = L ? "steun" : "weerstand"; }
-  }
-  const holds = sg * (h1[n].close - e21[n]) > -0.5 * A;
-  // 15m draait mee: EMA9/EMA21-kruising in trendrichting binnen de laatste 6 gesloten 15m-candles
-  const c15 = m15.map(c => c.close), a9 = calcEMA(c15, 9), a21 = calcEMA(c15, 21), m = c15.length - 1;
-  // zoek de laatste draai in trendrichting (max. 40 candles = 10 uur terug)
-  let ago = -1;
-  for (let k = 0; k < 40; k++) { const i = m - k; if (i < 1) break; if (sg * (a9[i - 1] - a21[i - 1]) <= 0 && sg * (a9[i] - a21[i]) > 0) { ago = k; break; } }
-  const nowOk = sg * (a9[m] - a21[m]) > 0, r1 = res["1h"].rsi, rsiOk = r1 == null || (L ? r1 < 70 : r1 > 30);
-  // "te laat" meten we in koersafstand, niet in tijd: hoeveel is de koers al gelopen sinds de draai?
-  const ran = ago >= 0 ? sg * (c15[m] - c15[m - ago]) : null;
-  const fresh = nowOk && ago >= 0 && ago < 6;
-  const lateOk = nowOk && ago >= 6 && ran != null && ran <= TURN_MAX_RUN * A;
-  const turned = fresh || lateOk;
-  const pctRan = ran != null ? Math.max(0, ran / c15[m] * 100).toFixed(1).replace(".", ",") : "";
-  const dirTxt = L ? "omhoog" : "omlaag";
-  let turnLbl, turnWhy;
-  if (!nowOk) { turnLbl = `15m draait ${dirTxt} (EMA9/21): nog niet`; turnWhy = "wait"; }
-  else if (fresh) { turnLbl = `15m draait ${dirTxt} (EMA9/21, ${ago === 0 ? "net" : ago + " candle" + (ago > 1 ? "s" : "") + " geleden"})`; turnWhy = "ok"; }
-  else if (lateOk) { turnLbl = `15m staat al ${ago} candles ${dirTxt}, koers pas ${pctRan}% gelopen: nog op tijd`; turnWhy = "ok"; }
-  else if (ago < 0) { turnLbl = `15m staat al langer dan 10 uur ${dirTxt}: geen recente draai`; turnWhy = "late"; }
-  else { turnLbl = `15m-draai te laat: koers al ${pctRan}% gelopen sinds ${ago} candles`; turnWhy = "late"; }
-  out.turnWhy = turnWhy;
-  out.checks = [
-    [`1u-trend ${L ? "opwaarts" : "neerwaarts"}`, res["1h"].trend === tw],
-    [`4u-trend ${L ? "opwaarts" : "neerwaarts"}`, res["4h"].trend === tw],
-    [`1d niet op ${L ? "VERKOPEN" : "KOPEN"}`, res["1d"].signal !== (L ? "V" : "K")],
-    [`Terugval naar ${where || "1u-EMA21 of " + (L ? "steun" : "weerstand")}`, touched && holds],
-    [turnLbl, turned],
-    [`RSI 1u niet ${L ? "overbought" : "oversold"}`, rsiOk]
-  ];
-  const base = out.checks.slice(0, 3).every(c => c[1]) && rsiOk;
-  out.ok = base && touched && holds && turned;
-  out.near = !out.ok && base && touched && holds;
-  return out;
-}
-function fullCheck(side, res, t) {
-  const x = entryCheck(side, res, t), p = pullbackCheck(side, res, t);
-  const kind = p.ok ? "terugval" : x.ok ? "kruising" : null;
-  return { ok: !!kind, kind, nearPb: !kind && p.near, nearX: !kind && x.near, near: !kind && (p.near || x.near), x, p };
-}
-/* ---------- strategieprofiel ---------- */
-const PROF_KEY = "btc_pro_profile";
-const DEF_PROF = { stop: "krap", entry: "limiet", exit: "doel", trend: "normaal" };
-const PROF_OPTS = {
-  stop: [["krap", "stop krap"], ["ruim", "stop ruim"]],
-  entry: [["limiet", "limietorder bij uitrekking"], ["direct", "altijd direct instappen"]],
-  exit: [["doel", "vast doel"], ["trail", "stop meeschuiven"]],
-  trend: [["normaal", "trendfilter normaal"], ["streng", "trendfilter streng"]]
-};
-function loadProf() { try { return Object.assign({}, DEF_PROF, JSON.parse(localStorage.getItem(PROF_KEY) || "{}")); } catch (e) { return Object.assign({}, DEF_PROF); } }
-let PROF = loadProf();
-function profCode(pr) { return [pr.stop, pr.entry, pr.exit, pr.trend].join("-"); }
-function profText(pr) { return ["stop", "entry", "exit", "trend"].map(k => PROF_OPTS[k].find(o => o[0] === pr[k])[1]).join(" · "); }
-function sameProf(a, b) { return profCode(a) === profCode(b); }
-const STOPCFG = {
-  krap: { pb: 0.2, xr: 0, min: 0.5, max: 3 },   // origineel
-  ruim: { pb: 0.6, xr: 0.5, min: 1.2, max: 3.5 } // meer ademruimte voorbij de structuur
-};
-const TRAIL_K = 2.5; // meeschuivende stop: 2,5× de 1u-ATR achter de beste slotkoers
-
-/* Alles wat het plan nodig heeft uit de markt, op één moment vastgelegd.
-   Live én in de terugtest wordt hieruit hetzelfde plan berekend. */
-function snapshot(side, res, t, price, kind) {
-  const h1 = closedC("1h"), m15 = closedC("15m"), d1 = closedC("1d");
-  if (!h1 || !m15 || !price || h1.length < 14) return null;
-  const L = side === "long", sg = L ? 1 : -1;
-  const A = calcATR(h1).at(-1), A15 = calcATR(m15).at(-1);
-  const e21 = calcEMA(h1.map(c => c.close), 21).at(-1);
-  const l15 = m15[m15.length - 1];
-  const stretched = sg * (price - e21) > 0.6 * A || (l15.high - l15.low) > 2 * A15;
-  const l4 = h1.slice(-4), l12 = h1.slice(-12);
-  const ext4 = L ? Math.min(...l4.map(c => c.low)) : Math.max(...l4.map(c => c.high));
-  const ext12 = L ? Math.min(...l12.map(c => c.low)) : Math.max(...l12.map(c => c.high));
-  const k = kind || "kruising";
-  const R = [], against = L ? "dn" : "up", sigAgainst = L ? "V" : "K";
-  if (t.h4 === against) R.push([2, "4u-trend staat nog tegen"]);
-  if (k === "terugval" && t.d1 === against) R.push([2, "1d-trend staat tegen: tegen de grote trend in"]);
-  if (res["15m"] && res["15m"].signal === sigAgainst) R.push([1, "15m-signaal wijst de andere kant op"]);
-  const vr = res["1h"] && res["1h"].volRatio;
-  if (k === "kruising" && vr != null && vr < 1.5) R.push([1, `Volume maar net voldoende (${vr.toFixed(1).replace(".", ",")}×)`]);
-  const r1 = res["1h"] && res["1h"].rsi;
-  if (r1 != null && (L ? r1 > 65 : r1 < 35)) R.push([1, `RSI 1u al ${r1.toFixed(0)}: beperkte ruimte`]);
-  let e200 = null;
-  if (d1 && d1.length >= 200) e200 = calcEMA(d1.map(c => c.close), 200).at(-1);
-  const e200Against = e200 != null && (L ? price < e200 : price > e200);
-  if (e200Against) R.push([1, `Koers ${L ? "onder" : "boven"} het 200-daags gemiddelde (€${fmt(e200)})`]);
-  const tm = nlNow();
-  if (tm.weekend) R.push([1, "Weekend: dunne markt"]);
-  if (tm.night) R.push([1, "Nachtelijke uren: weinig volume"]);
-  const zones = state.zones.filter(z => z.w >= 3).map(z => ({ lo: z.lo, hi: z.hi, label: z.label }));
-  return { side, kind: k, price, A, e21, stretched, ext4, ext12, zones, R,
-    d1With: t.d1 === (L ? "up" : "dn"), e200Against, e200 };
-}
-function planFromSnap(s, prof) {
-  if (!s) return null;
-  prof = prof || PROF;
-  const L = s.side === "long", sg = L ? 1 : -1, A = s.A, sc = STOPCFG[prof.stop] || STOPCFG.krap;
-  const p = { side: s.side, kind: s.kind, stretched: s.stretched, e21: s.e21, A, prof: profCode(prof), trail: prof.exit === "trail" };
-  p.limit = prof.entry === "limiet" && s.stretched;
-  p.entry = p.limit ? s.e21 + sg * 0.25 * A : s.price;
-  let stop = s.kind === "terugval" ? s.ext4 - sg * sc.pb * A
-    : (sc.xr ? s.ext12 - sg * sc.xr * A : s.ext12 * (L ? 0.998 : 1.002));
-  if (sg * (p.entry - stop) < sc.min * A) stop = p.entry - sg * sc.min * A;
-  p.stop = stop;
-  const dist = Math.abs(p.entry - stop);
-  if (prof.trend === "streng" && !s.d1With) p.blocked = "Strenge trendfilter: de 1d-trend loopt niet mee";
-  else if (prof.trend === "streng" && s.e200Against) p.blocked = `Strenge trendfilter: koers ${L ? "onder" : "boven"} het 200-daags gemiddelde`;
-  if (!p.blocked && dist > sc.max * A) p.blocked = `Stop zou te ver weg moeten liggen (meer dan ${String(sc.max).replace(".", ",")}× de gemiddelde 1u-beweging)`;
-  const opp = s.zones.filter(z => L ? z.lo > p.entry + 0.3 * dist : z.hi < p.entry - 0.3 * dist)
-    .sort((a, b) => L ? a.lo - b.lo : b.hi - a.hi);
-  const edge = z => L ? z.lo - 0.1 * A : z.hi + 0.1 * A;
-  p.t1 = opp[0] ? edge(opp[0]) : p.entry + sg * 2 * dist;
-  p.t2 = opp[1] ? edge(opp[1]) : p.entry + sg * Math.max(3 * dist, Math.abs(p.t1 - p.entry) + dist);
-  p.t1Label = opp[0] ? opp[0].label : "geen niveau, 2× risico";
-  const fm = SET.maker / 100, ft = SET.taker / 100, bo = SET.borrow / 100;
-  p.stopPct = dist / p.entry;
-  const costWin = 2 * fm + bo, riskPct = p.stopPct + fm + ft + bo;
-  p.riskFrac = riskPct;
-  const rr = tg => (Math.abs(tg - p.entry) / p.entry - costWin) / riskPct;
-  p.rr1 = rr(p.t1); p.rr2 = rr(p.t2); p.main = 1;
-  if (p.trail) {
-    p.tgt = null; p.rr = p.rr1;
-    if (p.rr1 < 1 && !p.blocked) p.blocked = `Te weinig ruimte tot de eerste ${L ? "weerstand" : "steun"} (€${fmt(p.t1)}): minder dan 1× het risico`;
-  } else {
-    if (p.rr1 < SET.minRR) { if (p.rr2 >= SET.minRR + 0.5) p.main = 2; else if (!p.blocked) p.blocked = `Te weinig ruimte tot de volgende ${L ? "weerstand" : "steun"} (€${fmt(p.t1)}): winst/risico na kosten maar ${p.rr1.toFixed(1).replace(".", ",")}`; }
-    p.rr = p.main === 1 ? p.rr1 : p.rr2; p.tgt = p.main === 1 ? p.t1 : p.t2;
-  }
-  let size = SET.capital * SET.riskPct / 100 / riskPct, lev = Math.max(1, Math.ceil(size / (SET.capital * 0.95)));
-  p.capped = false;
-  if (lev > SET.maxLev) { lev = SET.maxLev; size = SET.capital * 0.95 * lev; p.capped = true; }
-  p.size = size; p.lev = lev; p.margin = size / lev; p.riskEur = size * riskPct; p.costEur = size * costWin;
-  const liqD = (lev <= 1 && L) ? null : (1 / lev) * 0.85;
-  p.liq = liqD == null ? null : p.entry * (1 - sg * liqD);
-  if (liqD != null && p.stopPct > 0.7 * liqD && !p.blocked) p.blocked = "Stop ligt te dicht bij de liquidatieprijs: verlaag de hefboom";
-  const R = s.R.slice();
-  if (p.main === 2) R.push([1, "Niveau onderweg naar het doel"]);
-  if (p.lev >= 4) R.push([1, `Hefboom ${p.lev}×`]);
-  if (p.capped) R.push([1, "Kapitaal te klein voor de volle positie"]);
-  p.riskPts = R.reduce((a, x) => a + x[0], 0); p.reasons = R.map(x => x[1]);
-  p.risk = p.riskPts <= 1 ? "laag" : p.riskPts <= 3 ? "verhoogd" : "hoog";
-  p.riskCol = p.risk === "laag" ? "#33ff99" : p.risk === "verhoogd" ? "#ffb000" : "#ff4d4d";
-  return p;
-}
-function makePlan(side, res, t, price, kind) { return planFromSnap(snapshot(side, res, t, price, kind), PROF); }
-
-/* ---------- één trade nalopen op 15m-candles (live logboek én terugtest) ----------
-   Muteert e. Kan hervat worden: e.lastT onthoudt de laatst verwerkte candle. */
-const FILL_WIN = 16, MAX_HOLD = { doel: 192, trail: 1344 };
-function tradeR(e, px, exitFee, fees) {
-  const sg = e.side === "long" ? 1 : -1, entryFee = e.limit ? fees.maker : fees.taker;
-  const days = Math.max(1, e.held || 0) * 15 / 1440;
-  const net = sg * (px - e.entry) / e.entry - entryFee - exitFee - fees.borrow * days;
-  return +(net / e.riskFrac).toFixed(2);
-}
-function closeTrade(e, px, exitFee, fees, why, x) {
-  e.R = tradeR(e, px, exitFee, fees); e.exitT = x.time; e.exitPx = px; e.why = why;
-  e.status = why === "tijd" ? "verlopen" : e.R > 0.05 ? "winst" : e.R < -0.05 ? "verlies" : "quitte";
-}
-function stepTrade(e, c, fees) {
-  if (e.status !== "open" && e.status !== "gevuld") return false;
-  if (!c || !c.length) return false;
-  const L = e.side === "long", sg = L ? 1 : -1;
-  const from = e.lastT != null ? e.lastT : e.ts - 9e5;
-  if (c[0].time > from + 9e5 + 1000) { e.status = "geen data"; return true; }
-  if (e.stop0 == null) e.stop0 = e.stop;
-  if (e.riskFrac == null) e.riskFrac = Math.abs(e.entry - e.stop0) / e.entry + fees.maker + fees.taker + fees.borrow;
-  const risk = Math.abs(e.entry - e.stop0), be = e.entry * (1 + sg * (fees.maker + fees.taker + fees.borrow));
-  const maxHold = MAX_HOLD[e.trail ? "trail" : "doel"];
-  let ch = false;
-  for (const x of c) {
-    if (x.time <= from || x.time <= (e.lastT ?? -Infinity)) continue;
-    e.lastT = x.time; ch = true;
-    if (e.status === "open") {
-      e.age = (e.age || 0) + 1;
-      const hit = !e.limit || (L ? x.low <= e.entry : x.high >= e.entry);
-      if (!hit) { if (e.age >= FILL_WIN) { e.status = "niet gevuld"; break; } continue; }
-      e.status = "gevuld"; e.fill = x.time; e.best = e.entry; e.held = 0;
-    }
-    e.held = (e.held || 0) + 1;
-    if (L ? x.low <= e.stop : x.high >= e.stop) { closeTrade(e, e.stop, fees.taker, fees, "stop", x); break; }
-    if (!e.trail && e.tgt != null && (L ? x.high >= e.tgt : x.low <= e.tgt)) { closeTrade(e, e.tgt, fees.maker, fees, "doel", x); break; }
-    if (e.trail) {
-      e.best = L ? Math.max(e.best, x.close) : Math.min(e.best, x.close);
-      if (sg * (e.best - e.entry) >= risk) {
-        const tr = e.best - sg * TRAIL_K * e.A;
-        e.stop = L ? Math.max(e.stop, be, tr) : Math.min(e.stop, be, tr);
-      }
-    }
-    if (e.held >= maxHold) { closeTrade(e, x.close, fees.taker, fees, "tijd", x); break; }
-  }
-  return ch;
-}
-function curFees() { return { maker: SET.maker / 100, taker: SET.taker / 100, borrow: SET.borrow / 100 }; }
-const nl1 = v => v.toFixed(1).replace(".", ",");
-function renderPlan(p) {
-  const panel = document.getElementById("planPanel");
-  if (!p || state.pos) { panel.style.display = "none"; return; }
-  panel.style.display = "block";
-  panel.style.borderColor = p.blocked ? "#1e3327" : p.riskCol;
-  const L = p.side === "long";
-  document.getElementById("planLabel").textContent = `PLAN · ${L ? "LONG" : "SHORT"} · ${p.kind === "terugval" ? "TERUGVAL IN TREND" : "KRUISING"}`;
-  if (p.blocked) {
-    document.getElementById("planBody").innerHTML = `<div class="n">Het ${L ? "long" : "short"}-signaal is er, maar het plan klopt niet:</div><div>› ${p.blocked}</div>
-      <div class="muted" style="margin-top:6px;">Wacht op een betere uitgangspositie of een doorbraak van dat niveau.</div>`;
-    return;
-  }
-  document.getElementById("planBody").innerHTML = `
-    <div class="risk" style="color:${p.riskCol};border-color:${p.riskCol};">RISICO ${p.risk.toUpperCase()}</div>
-    ${p.reasons.length ? `<div>${p.reasons.map(r => `<div>› ${r}</div>`).join("")}</div>` : `<div class="muted">› Geen extra risicofactoren gevonden</div>`}
-    <div class="plangrid">
-      <div><span>${p.limit ? "Limietorder instap" : "Instap rond"}</span><b>€${fmt(p.entry)}</b></div>
-      <div><span>Stop (auto-close)</span><b class="v">€${fmt(p.stop)}</b></div>
-      ${p.trail ? `<div><span>Eerste ${L ? "weerstand" : "steun"}</span><b class="k">€${fmt(p.t1)}</b></div>
-      <div><span>Uitstap</span><b class="k">stop meeschuiven</b></div>
-      <div><span>Ruimte tot eerste niveau</span><b>${nl1(p.rr)} : 1</b></div>` :
-      `<div><span>Doel 1${p.main === 1 ? " · hoofddoel" : ""}</span><b class="k">€${fmt(p.t1)}</b></div>
-      <div><span>Doel 2${p.main === 2 ? " · hoofddoel" : ""}</span><b class="k">€${fmt(p.t2)}</b></div>
-      <div><span>Winst/risico na kosten</span><b>${nl1(p.rr)} : 1</b></div>`}
-      <div><span>Stopafstand</span><b>${(p.stopPct * 100).toFixed(2).replace(".", ",")}%</b></div>
-      <div><span>Positiegrootte</span><b>€${fmt(p.size)}</b></div>
-      <div><span>Eigen inleg bij ${p.lev}×</span><b>€${fmt(p.margin)}</b></div>
-      <div><span>Je riskeert</span><b>€${p.riskEur.toFixed(2).replace(".", ",")}</b></div>
-      <div><span>Liquidatie (schatting)</span><b>${p.liq ? "€" + fmt(p.liq) : "n.v.t."}</b></div>
-    </div>
-    ${p.limit ? `<div class="n" style="margin-top:8px;">› De koers is uitgerekt ten opzichte van de 1u-EMA21. Niet achteraan rennen: zet een limietorder op €${fmt(p.entry)}. Wordt die binnen ±4 uur niet gevuld, dan laat je hem vervallen.</div>` : ""}
-    ${p.trail ? `<div class="muted" style="margin-top:6px;">› Zet bij openen direct de stop op €${fmt(p.stop)}, zonder winstdoel. Loopt de koers 1× je risico (€${fmt(p.entry + (L ? 1 : -1) * Math.abs(p.entry - p.stop))}) mee, dan geeft JOUW POSITIE steeds een nieuwe stop: eerst naar je instap, daarna ${String(TRAIL_K).replace(".", ",")}× de 1u-ATR (±€${fmt(TRAIL_K * p.A)}) achter de beste slotkoers.</div>`
-      : `<div class="muted" style="margin-top:6px;">› Zet bij openen direct de auto-close op €${fmt(p.stop)} en €${fmt(p.tgt)}. Kosten bij winst (fees + 1 dag leenrente): ±€${p.costEur.toFixed(2).replace(".", ",")}.</div>`}
-    <div class="muted" style="margin-top:4px;">› Profiel: ${profText(PROF)}</div>
-    <div class="btnrow"><button class="${L ? "long" : "short"}" onclick="takePlan()">✓ ${L ? "Long" : "Short"} geopend volgens plan</button></div>`;
-}
-function takePlan() {
-  const p = state.plan; if (!p || p.blocked) return;
-  storePos({ side: p.side, entry: Math.round(p.entry), stop: Math.round(p.stop), stop0: Math.round(p.stop), tgt: p.tgt != null ? Math.round(p.tgt) : undefined, trail: p.trail, A: Math.round(p.A), lev: p.lev, size: Math.round(p.size), date: new Date().toISOString() });
-  render();
-}
-function renderLevels(price) {
-  const el = document.getElementById("levels");
-  const list = state.zones.filter(z => z.w >= 2 && Math.abs(z.mid / price - 1) < 0.07).sort((a, b) => b.mid - a.mid);
-  if (!list.length) { el.innerHTML = `<div class="muted">Geen sterke niveaus binnen 7% van de koers.</div>`; return; }
-  const max = Math.max(...list.map(z => z.w));
-  let h = "", placed = false;
-  const nowRow = `<div class="lvrow now"><span>› koers nu</span><span>€${fmt(price)}</span><span></span></div>`;
-  list.forEach(z => {
-    if (!placed && z.mid < price) { h += nowRow; placed = true; }
-    const col = z.mid > price ? "#ff6b6b" : "#33ff99";
-    h += `<div class="lvrow"><span>${z.label}</span><span style="color:${col}">€${fmt(z.mid)}</span><span><span style="display:inline-block;height:6px;width:${Math.round(8 + 50 * z.w / max)}px;background:${col};opacity:.6;"></span></span></div>`;
-  });
-  if (!placed) h += nowRow;
-  el.innerHTML = `<div class="muted" style="margin-bottom:6px;">Rood = weerstand boven de koers, groen = steun eronder. Hoe langer het balkje, hoe vaker de koers hier reageerde.</div>` + h;
-}
-/* --- schaduwlogboek --- */
-function loadLog() { try { return JSON.parse(localStorage.getItem(LOG_KEY) || "[]"); } catch (e) { return []; } }
-function saveLog(l) { try { localStorage.setItem(LOG_KEY, JSON.stringify(l.slice(-300))); } catch (e) {} }
-function logPlan(p) {
-  if (!p || p.stop == null) return;
-  const log = loadLog(), now = Date.now();
-  const last = log.filter(e => e.side === p.side).slice(-1)[0];
-  if (last && now - last.ts < 36e5 && Math.abs(last.entry / p.entry - 1) < 0.003) return;
-  // als er al een geadviseerde trade loopt, telt een nieuw signaal in dezelfde richting niet als nieuwe trade
-  if (!p.blocked && log.some(e => !e.filtered && e.side === p.side && (e.status === "open" || e.status === "gevuld"))) return;
-  log.push({ v: 2, ts: now, side: p.side, entry: p.entry, stop: p.stop, tgt: p.tgt, rr: +p.rr.toFixed(2), risk: p.blocked ? "-" : p.risk,
-    filtered: !!p.blocked, why: p.blocked || "", status: "open", kind: p.kind, limit: p.limit, trail: p.trail, A: p.A, riskFrac: p.riskFrac, prof: p.prof });
-  saveLog(log);
-}
-function evalLog() {
-  const c = closedC("15m"); if (!c || !c.length) return;
-  const log = loadLog(), fees = curFees(); let ch = false;
-  for (const e of log) {
-    if (e.status !== "open" && e.status !== "gevuld") continue;
-    if (e.v !== 2 && e.limit == null) e.limit = true; // oude regels: zoals vroeger pas gevuld als de koers de instap raakt
-    if (stepTrade(e, c, fees)) ch = true;
-  }
-  if (ch) saveLog(log);
-}
-function renderLog() {
-  const log = loadLog(), el = document.getElementById("logBody");
-  if (!log.length) { el.innerHTML = `<div class="muted">Nog geen signalen vastgelegd.</div>`; return; }
-  const done = log.filter(e => ["winst", "verlies", "verlopen", "quitte"].includes(e.status));
-  const stat = a => { if (!a.length) return "nog geen"; const w = a.filter(e => e.status === "winst").length, r = a.reduce((s, e) => s + (e.R || 0), 0);
-    return `${a.length} trades · ${Math.round(w / a.length * 100)}% winst · ${r >= 0 ? "+" : ""}${nl1(r)} R`; };
-  let h = `<div class="muted">Actief profiel: ${profText(PROF)}</div><div>Geadviseerd: ${stat(done.filter(e => !e.filtered))}</div>`;
-  ["laag", "verhoogd", "hoog"].forEach(r => h += `<div class="muted">› risico ${r}: ${stat(done.filter(e => e.risk === r))}</div>`);
-  h += `<div class="muted">› type terugval: ${stat(done.filter(e => !e.filtered && e.kind === "terugval"))}</div>`;
-  h += `<div class="muted">› type kruising: ${stat(done.filter(e => !e.filtered && e.kind !== "terugval"))}</div>`;
-  h += `<div>Weggefilterd: ${stat(done.filter(e => e.filtered))}</div>`;
-  h += `<div class="muted">Niet gevuld (gemist): ${log.filter(e => e.status === "niet gevuld").length}</div>`;
-  h += `<div class="scroll" style="margin-top:8px;"><table class="tf"><thead><tr><th>Wanneer</th><th>Signaal</th><th>Instap</th><th>Uitkomst</th></tr></thead><tbody>` +
-    log.slice(-20).reverse().map(e => `<tr><td>${new Date(e.ts).toLocaleString("nl-NL", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}</td>
-      <td class="${e.side === "long" ? "k" : "v"}">${e.side} ${e.kind === "terugval" ? "T" : "K"}${e.trail ? "~" : ""}${e.filtered ? " (gefilterd)" : " · " + e.risk}</td><td>€${fmt(e.entry)}</td>
-      <td>${e.status}${e.R != null ? ` (${e.R > 0 ? "+" : ""}${nl1(e.R)} R)` : ""}</td></tr>`).join("") + `</tbody></table></div>`;
-  el.innerHTML = h;
-}
-function clearLog() { if (confirm("Het hele schaduwlogboek wissen?")) { localStorage.removeItem(LOG_KEY); renderLog(); } }
-/* ---------- terugtest: dezelfde regels, candle voor candle over echte historie ---------- */
-const BT_W = { "15m": 300, "1h": 400, "4h": 300, "1d": 400 };
-const PER_DAY = { "15m": 96, "1h": 24, "4h": 6, "1d": 1 };
-async function histBitvavo(iv, n) {
+async function fromBitvavo() {
   const out = new Map(); let end = Date.now();
-  for (let g = 0; g < 40 && out.size < n; g++) {
-    const r = await fetch(`https://api.bitvavo.com/v2/${COIN.bitvavo}/candles?interval=${iv}&limit=1440&end=${end}`, { cache: "no-store" });
+  for (let g = 0; g < 8; g++) {
+    const r = await fetch(`https://api.bitvavo.com/v2/${COIN.bitvavo}/candles?interval=1d&limit=1440&end=${end}`, { cache: "no-store" });
     if (!r.ok) throw new Error(`Bitvavo HTTP ${r.status}`);
-    const raw = await r.json();
-    if (!Array.isArray(raw) || !raw.length) break;
+    const raw = await r.json(); if (!Array.isArray(raw) || !raw.length) break;
     let oldest = Infinity;
-    raw.forEach(k => { const t = +k[0]; oldest = Math.min(oldest, t); out.set(t, { time: t, open: +k[1], high: +k[2], low: +k[3], close: +k[4], volume: +k[5] }); });
-    if (!(oldest < end)) break;
-    end = oldest - 1;
-    if (raw.length < 1440) break;
+    raw.forEach(k => { const t = +k[0]; oldest = Math.min(oldest, t); out.set(t, { time: t, open: +k[1], high: +k[2], low: +k[3], close: +k[4] }); });
+    if (!(oldest < end) || raw.length < 1440) break; end = oldest - 1;
   }
   return [...out.values()];
 }
-async function histBinance(iv, n) {
-  const out = new Map(); let end = Date.now();
-  for (let g = 0; g < 50 && out.size < n; g++) {
-    const r = await fetch(`https://api.binance.com/api/v3/klines?symbol=${COIN.binance}&interval=${iv}&limit=1000&endTime=${end}`, { cache: "no-store" });
+async function fromBinance() {
+  const out = new Map(); let start = Date.UTC(2017, 0, 1);
+  for (let g = 0; g < 10; g++) {
+    const r = await fetch(`https://api.binance.com/api/v3/klines?symbol=${COIN.binance}&interval=1d&limit=1000&startTime=${start}`, { cache: "no-store" });
     if (!r.ok) throw new Error(`Binance HTTP ${r.status}`);
-    const raw = await r.json();
-    if (!Array.isArray(raw) || !raw.length) break;
-    raw.forEach(k => out.set(k[0], { time: k[0], open: +k[1], high: +k[2], low: +k[3], close: +k[4], volume: +k[5] }));
-    const oldest = raw[0][0];
-    if (!(oldest < end)) break;
-    end = oldest - 1;
-    if (raw.length < 1000) break;
+    const raw = await r.json(); if (!Array.isArray(raw) || !raw.length) break;
+    raw.forEach(k => out.set(k[0], { time: k[0], open: +k[1], high: +k[2], low: +k[3], close: +k[4] }));
+    if (raw.length < 1000) break; start = raw[raw.length - 1][0] + 1;
   }
   return [...out.values()];
 }
-async function fetchHist(iv, n) {
+async function getCandles() {
   const errs = [];
-  for (const [name, fn] of [["Bitvavo", histBitvavo], ["Binance", histBinance]]) {
+  for (const [name, fn] of [["Bitvavo", fromBitvavo], ["Binance", fromBinance]]) {
     try {
       const now = Date.now();
-      const c = (await fn(iv, n)).filter(x => isFinite(x.time) && x.close > 0 && x.time + IV_MS[iv] <= now).sort((a, b) => a.time - b.time).slice(-n);
-      if (c.length < Math.min(n, 400)) throw new Error(`${name}: te weinig historie (${c.length})`);
-      return { candles: c, source: name };
+      const c = (await fn()).filter(x => x.close > 0 && x.time + DAY <= now).sort((a, b) => a.time - b.time);
+      if (c.length < 900) throw new Error(`${name}: te weinig historie (${c.length} dagen)`);
+      if (now - c[c.length - 1].time > 3 * DAY) throw new Error(`${name}: verouderde data`);
+      return { c, src: name };
     } catch (e) { errs.push(e.message); }
   }
   throw new Error(errs.join(" | "));
 }
-function allProfiles() {
-  const out = [];
-  PROF_OPTS.stop.forEach(a => PROF_OPTS.entry.forEach(b => PROF_OPTS.exit.forEach(c => PROF_OPTS.trend.forEach(d =>
-    out.push({ stop: a[0], entry: b[0], exit: c[0], trend: d[0] })))));
-  return out;
+async function livePrice() {
+  try { const r = await fetch(`https://api.bitvavo.com/v2/ticker/price?market=${COIN.bitvavo}`, { cache: "no-store" }); return +(await r.json()).price; } catch (e) { return null; }
 }
-function btStats(tr, midT) {
-  const n = tr.length, w = tr.filter(e => e.R > 0.05).length;
-  let sum = 0, peak = 0, dd = 0, gp = 0, gl = 0, h1 = 0, h2 = 0, hold = 0; const curve = [0];
-  tr.forEach(e => {
-    sum += e.R; curve.push(sum); peak = Math.max(peak, sum); dd = Math.max(dd, peak - sum);
-    if (e.R > 0) gp += e.R; else gl -= e.R;
-    if (e.fill < midT) h1 += e.R; else h2 += e.R;
-    hold += (e.held || 0) / 4;
-  });
-  return { n, win: n ? w / n : 0, sum, avg: n ? sum / n : 0, dd, pf: gl ? gp / gl : (gp ? 99 : 0), h1, h2, curve, hold: n ? hold / n : 0 };
-}
-function simProfile(signals, c15, idxOf, pr, fees, midT) {
-  const trades = []; let busy = -1, unfilled = 0, open = 0;
-  for (const s of signals) {
-    if (s.j <= busy) continue;
-    const p = planFromSnap(s.snap, pr);
-    if (!p || p.blocked) continue;
-    const e = { side: p.side, kind: p.kind, entry: p.entry, stop: p.stop, tgt: p.tgt, trail: p.trail, A: p.A, limit: p.limit, riskFrac: p.riskFrac, ts: s.T, status: "open" };
-    stepTrade(e, c15.slice(s.j + 1, s.j + 3 + FILL_WIN + MAX_HOLD[p.trail ? "trail" : "doel"]), fees);
-    if (e.status === "niet gevuld") { unfilled++; busy = idxOf.get(e.lastT) ?? busy; continue; }
-    if (e.status === "open" || e.status === "gevuld") { open++; break; }
-    trades.push(e); busy = idxOf.get(e.exitT) ?? busy;
-  }
-  const st = btStats(trades, midT);
-  st.robust = st.n >= 25 && st.sum > 0 && st.h1 > 0 && st.h2 > 0;
-  return Object.assign({ prof: pr, code: profCode(pr), trades, unfilled, open }, st);
-}
-async function runBacktest() {
-  if (state.btBusy) return;
-  const days = +document.getElementById("btDays").value || 180;
-  const stEl = document.getElementById("btStatus"), btn = document.getElementById("btBtn");
-  state.btBusy = true; clearInterval(state.timer); btn.disabled = true;
-  const saved = { data: state.data, zones: state.zones };
-  try {
-    const H = {}, src = {};
-    for (const iv of IVS) {
-      stEl.textContent = `Historie ophalen: ${IV_LABEL[iv]}...`;
-      const r = await fetchHist(iv, days * PER_DAY[iv] + BT_W[iv] + 60);
-      H[iv] = r.candles; src[iv] = r.source;
+
+/* ---------- indicatoren ---------- */
+function sma(a, n) { const o = new Array(a.length).fill(null); let s = 0; for (let i = 0; i < a.length; i++) { s += a[i]; if (i >= n) s -= a[i - n]; if (i >= n - 1) o[i] = s / n; } return o; }
+function ema(a, n) { const k = 2 / (n + 1), o = []; a.forEach((v, i) => o.push(i ? v * k + o[i - 1] * (1 - k) : v)); return o; }
+
+/* ---------- regels: positie per dag op basis van het slot van die dag (+1 long, 0 euro, -1 short) ---------- */
+const RULES = [
+  { id: "hold", name: "Gewoon vasthouden", warm: 0, kind: "hold" },
+  ...[50, 100, 150, 200].map(n => ({ id: `sma${n}`, name: `Koers vs ${n}-daags gemiddelde`, warm: n, kind: "sma", n })),
+  { id: "ema20_50", name: "EMA20 / EMA50 kruising", warm: 150, kind: "ema", f: 20, s: 50 },
+  { id: "ema50_200", name: "EMA50 / EMA200 kruising", warm: 250, kind: "ema", f: 50, s: 200 },
+  { id: "don20", name: "Uitbraak 20 dagen (uit op 10)", warm: 20, kind: "don", n: 20 },
+  { id: "don55", name: "Uitbraak 55 dagen (uit op 27)", warm: 55, kind: "don", n: 55 },
+  { id: "mom30", name: "Momentum 30 dagen", warm: 30, kind: "mom", n: 30 },
+  { id: "mom90", name: "Momentum 90 dagen", warm: 90, kind: "mom", n: 90 }
+];
+function positions(rule, c, short) {
+  const cl = c.map(x => x.close), N = c.length, pos = new Array(N).fill(0), lo = short ? -1 : 0;
+  if (rule.kind === "hold") return pos.fill(1);
+  if (rule.kind === "sma") { const m = sma(cl, rule.n); for (let i = 0; i < N; i++) pos[i] = m[i] == null ? 0 : cl[i] > m[i] ? 1 : lo; }
+  if (rule.kind === "ema") { const a = ema(cl, rule.f), b = ema(cl, rule.s); for (let i = 0; i < N; i++) pos[i] = a[i] > b[i] ? 1 : lo; }
+  if (rule.kind === "mom") { for (let i = rule.n; i < N; i++) pos[i] = cl[i] > cl[i - rule.n] ? 1 : lo; }
+  if (rule.kind === "don") {
+    const n = rule.n, x = Math.floor(n / 2); let p = 0;
+    for (let i = n; i < N; i++) {
+      const w = c.slice(i - n, i), wx = c.slice(i - x, i);
+      const hh = Math.max(...w.map(q => q.high)), ll = Math.min(...w.map(q => q.low));
+      const xh = Math.max(...wx.map(q => q.high)), xl = Math.min(...wx.map(q => q.low));
+      if (p === 1 && cl[i] < xl) p = 0;
+      if (p === -1 && cl[i] > xh) p = 0;
+      if (p !== 1 && cl[i] > hh) p = 1;
+      else if (short && p !== -1 && cl[i] < ll) p = -1;
+      pos[i] = p;
     }
-    const c15 = H["15m"], startT = Math.max(Date.now() - days * 864e5, c15[Math.min(c15.length - 1, BT_W["15m"])].time);
-    const j0 = Math.max(60, c15.findIndex(c => c.time >= startT));
-    const ptr = { "1h": 0, "4h": 0, "1d": 0 }, win = {}, rc = {}, signals = [];
-    let tick = performance.now();
-    const cached = (key, fn) => (rc[key] !== undefined ? rc[key] : (rc[key] = fn()));
-    for (let j = j0; j < c15.length; j++) {
-      const T = c15[j].time + 9e5, price = c15[j].close;
-      for (const iv of ["1h", "4h", "1d"]) { const a = H[iv]; while (ptr[iv] < a.length && a[ptr[iv]].time + IV_MS[iv] <= T) ptr[iv]++; }
-      if (ptr["1h"] < 60 || ptr["4h"] < 60 || ptr["1d"] < 60) continue;
-      const dummy = { time: T, open: price, high: price, low: price, close: price, volume: 0 };
-      const data = { "15m": c15.slice(Math.max(0, j + 1 - BT_W["15m"]), j + 1).concat([dummy]) };
-      for (const iv of ["1h", "4h", "1d"]) {
-        if (!win[iv] || win[iv].p !== ptr[iv]) win[iv] = { p: ptr[iv], c: H[iv].slice(Math.max(0, ptr[iv] - BT_W[iv]), ptr[iv]).concat([dummy]) };
-        data[iv] = win[iv].c;
-      }
-      state.data = data; SIM_NOW = T;
-      const res = {
-        "15m": analyze("15m"),
-        "1h": cached(`1h|${ptr["1h"]}|${ptr["4h"]}`, () => analyze("1h")),
-        "4h": cached(`4h|${ptr["4h"]}|${ptr["1d"]}`, () => analyze("4h")),
-        "1d": cached(`1d|${ptr["1d"]}`, () => analyze("1d"))
-      };
-      if (!IVS.every(iv => res[iv])) continue;
-      const tr = { h1: res["1h"].trend, h4: res["4h"].trend, d1: res["1d"].trend };
-      state.zones = buildZones(price);
-      const eL = fullCheck("long", res, tr), eS = fullCheck("short", res, tr);
-      if (eL.ok || eS.ok) {
-        const side = eL.ok ? "long" : "short", snap = snapshot(side, res, tr, price, (eL.ok ? eL : eS).kind);
-        if (snap) signals.push({ j, T, snap });
-      }
-      if (performance.now() - tick > 150) {
-        stEl.textContent = `Doorrekenen: ${Math.round((j - j0) / (c15.length - j0) * 100)}% · ${signals.length} signaalmomenten`;
-        await new Promise(r => setTimeout(r, 0)); tick = performance.now();
-      }
+  }
+  for (let i = 0; i < Math.min(N, rule.warm); i++) pos[i] = 0;
+  return pos;
+}
+/* Equity op elke opening. Positie uit het slot van dag i geldt vanaf de opening van dag i+1. */
+function simulate(c, pos, fee, borrow) {
+  const N = c.length, eq = new Array(N).fill(1);
+  let E = 1, p = 0, entryPx = 0, entryE = 1, trades = 0, invested = 0;
+  const val = (px, d) => p === 1 ? entryE * px / entryPx : p === -1 ? Math.max(0, entryE * (2 - px / entryPx) - entryE * borrow * d) : E;
+  let held = 0;
+  for (let k = 1; k < N; k++) {
+    const want = pos[k - 1], px = c[k].open;
+    if (p !== 0) held++;
+    E = val(px, held);
+    if (want !== p) {
+      E *= 1 - fee * Math.abs(want - p);
+      p = want; entryPx = px; entryE = E; held = 0; trades++;
     }
-    SIM_NOW = null; state.data = saved.data; state.zones = saved.zones;
-    stEl.textContent = "Profielen vergelijken...";
-    await new Promise(r => setTimeout(r, 0));
-    const idxOf = new Map(c15.map((c, i) => [c.time, i]));
-    const from = c15[j0].time, to = c15[c15.length - 1].time, midT = from + (to - from) / 2;
-    const results = allProfiles().map(pr => simProfile(signals, c15, idxOf, pr, curFees(), midT)).sort((a, b) => b.sum - a.sum);
-    state.bt = { days, from, to, midT, results, signals: signals.length, src: [...new Set(Object.values(src))].join(" + "), sel: (results.find(r => r.robust) || results[0]).code };
-    stEl.textContent = "";
-  } catch (e) {
-    stEl.textContent = `Terugtest mislukt: ${e.message}`;
-  } finally {
-    SIM_NOW = null; state.data = saved.data; state.zones = saved.zones;
-    state.btBusy = false; btn.disabled = false;
-    state.timer = setInterval(fetchAll, 60000);
-    renderBacktest(); render();
+    if (p !== 0) invested++;
+    eq[k] = E;
   }
+  return { eq, trades, exposure: invested / (N - 1) };
 }
-function btSel(code) { if (state.bt) { state.bt.sel = code; renderBacktest(); } }
-function btUse(code) {
-  const r = state.bt && state.bt.results.find(x => x.code === code); if (!r) return;
-  if (!confirm(`Dit profiel gebruiken voor het live advies?\n\n${profText(r.prof)}`)) return;
-  setProf(r.prof);
+function stats(eq, c, a, b) {
+  if (b - a < 30) return null;
+  const e0 = eq[a], e1 = eq[b], yrs = (c[b].time - c[a].time) / (365.25 * DAY);
+  let peak = e0, dd = 0;
+  for (let i = a; i <= b; i++) { peak = Math.max(peak, eq[i]); dd = Math.max(dd, 1 - eq[i] / peak); }
+  const ret = e1 / e0 - 1, cagr = e0 > 0 && e1 > 0 ? Math.pow(e1 / e0, 1 / yrs) - 1 : -1;
+  return { ret, cagr, dd, score: cagr / Math.max(dd, 0.05) };
 }
-function rTxt(v) { return (v >= 0 ? "+" : "") + nl1(v) + " R"; }
-function curveSvg(main, base) {
-  const all = [...main, ...(base || [])], W = 900, H = 170, pad = 8;
-  const mx = Math.max(1, ...all), mn = Math.min(-1, ...all), len = Math.max(main.length, base ? base.length : 0, 2);
-  const x = i => pad + i / (len - 1) * (W - 2 * pad), y = v => pad + (1 - (v - mn) / (mx - mn)) * (H - 2 * pad);
-  const line = (a, col, w, dash) => `<path d="${a.map((v, i) => `${i ? "L" : "M"}${x(i).toFixed(1)} ${y(v).toFixed(1)}`).join(" ")}" fill="none" stroke="${col}" stroke-width="${w}" ${dash ? 'stroke-dasharray="5,4"' : ""}/>`;
-  return `<svg viewBox="0 0 ${W} ${H}" width="100%"><line x1="${pad}" x2="${W - pad}" y1="${y(0)}" y2="${y(0)}" stroke="#1e3327"/>` +
-    (base ? line(base, "#5a7a63", 1.5, true) : "") + line(main, "#33ff99", 2.2) +
-    `<text x="${W - pad}" y="16" text-anchor="end" fill="#5a7a63" font-size="14" font-family="monospace">${rTxt(main[main.length - 1])}</text></svg>`;
-}
-function renderBacktest() {
-  const el = document.getElementById("btBody"); if (!el) return;
-  const B = state.bt;
-  if (!B) { el.innerHTML = `<div class="muted">Nog geen terugtest gedraaid. Eén run kost op een telefoon ongeveer een halve tot twee minuten.</div>`; return; }
-  const d = t => new Date(t).toLocaleDateString("nl-NL", { day: "numeric", month: "short", year: "2-digit" });
-  const best = B.results.find(r => r.robust), base = B.results.find(r => sameProf(r.prof, DEF_PROF));
-  let h = `<div class="muted">${d(B.from)} t/m ${d(B.to)} · bron ${B.src} · ${B.signals} signaalmomenten · kosten volgens je instellingen</div>`;
-  h += best
-    ? `<div style="margin:8px 0;">Beste robuuste profiel: <span class="k">${profText(best.prof)}</span> (${rTxt(best.sum)} over ${best.n} trades, beide helften van de periode positief).</div>`
-    : `<div class="n" style="margin:8px 0;">Geen enkel profiel is met minstens 25 trades in beide helften van de periode winstgevend. Dan is er in deze periode geen bewijs dat deze signalen een voordeel geven: kleiner handelen of niet handelen is dan de verdedigbare keuze.</div>`;
-  h += `<div class="scroll"><table class="tf bt"><thead><tr><th>Profiel</th><th>Trades</th><th>Winst</th><th>Totaal</th><th>Max. dal</th></tr></thead><tbody>` +
-    B.results.map(r => {
-      const act = sameProf(r.prof, PROF), sel = r.code === B.sel;
-      const tags = [act ? `<span class="n">● actief</span>` : "", sameProf(r.prof, DEF_PROF) ? `<span class="muted">origineel</span>` : "", r.robust ? `<span class="k">✓ robuust</span>` : ""].filter(Boolean).join(" ");
-      return `<tr class="${sel ? "sel" : ""}" onclick="btSel('${r.code}')"><td><div>${r.prof.stop} · ${r.prof.entry}</div><div class="muted">${r.prof.exit === "trail" ? "meeschuiven" : "vast doel"} · ${r.prof.trend}</div>${tags ? `<div>${tags}</div>` : ""}</td>
-        <td>${r.n}</td><td>${r.n ? Math.round(r.win * 100) + "%" : "-"}</td><td class="${r.sum > 0 ? "k" : r.sum < 0 ? "v" : ""}">${rTxt(r.sum)}</td><td>${nl1(r.dd)} R</td></tr>`;
-    }).join("") + `</tbody></table></div>`;
-  const r = B.results.find(x => x.code === B.sel);
-  if (r) {
-    const part = f => { const t = r.trades.filter(f); if (!t.length) return "geen"; const s = t.reduce((a, e) => a + e.R, 0), w = t.filter(e => e.R > 0.05).length; return `${t.length} · ${Math.round(w / t.length * 100)}% · ${rTxt(s)}`; };
-    h += `<div class="btdetail"><div class="label" style="margin:0 0 4px;">GEKOZEN · ${profText(r.prof).toUpperCase()}</div>
-      ${curveSvg(r.curve, base && base !== r ? base.curve : null)}
-      <div class="legend" style="margin-top:2px;"><span class="k">── dit profiel</span>${base && base !== r ? `<span>- - origineel</span>` : ""}<span>cumulatief resultaat in R na kosten</span></div>
-      <div class="plangrid">
-        <div><span>Gemiddeld per trade</span><b>${rTxt(r.avg)}</b></div>
-        <div><span>Winstfactor</span><b>${r.pf >= 99 ? "∞" : nl1(r.pf)}</b></div>
-        <div><span>Eerste helft</span><b class="${r.h1 >= 0 ? "k" : "v"}">${rTxt(r.h1)}</b></div>
-        <div><span>Tweede helft</span><b class="${r.h2 >= 0 ? "k" : "v"}">${rTxt(r.h2)}</b></div>
-        <div><span>Gem. duur</span><b>${nl1(r.hold)} uur</b></div>
-        <div><span>Niet gevuld</span><b>${r.unfilled}</b></div>
-      </div>
-      <div style="margin-top:8px;">› long: ${part(e => e.side === "long")}</div>
-      <div>› short: ${part(e => e.side === "short")}</div>
-      <div>› terugval: ${part(e => e.kind === "terugval")}</div>
-      <div>› kruising: ${part(e => e.kind !== "terugval")}</div>
-      <div class="btnrow">${sameProf(r.prof, PROF) ? `<button disabled>dit profiel is actief</button>` : `<button class="primary" onclick="btUse('${r.code}')">dit profiel gebruiken</button>`}</div></div>`;
-  }
-  h += `<div class="muted" style="margin-top:10px;">Zo lees je dit: 1 R is het bedrag dat je per trade riskeert. Kies niet blind de bovenste regel. Met 16 profielen is er altijd één die toevallig goed scoort; let daarom op genoeg trades (25+), een niet te diep dal en vooral of beide helften van de periode positief zijn. Draai de test na een paar weken opnieuw. Slippage en gemiste meldingen zitten er niet in; in het echt valt het resultaat lager uit.</div>`;
-  el.innerHTML = h;
-}
+function countTrades(pos, a, b) { let n = 0; for (let i = a + 1; i <= b; i++) if (pos[i] !== pos[i - 1]) n++; return n; }
 
-/* --- instellingen --- */
-function setProf(np, rerender = true) {
-  PROF = Object.assign({}, DEF_PROF, np);
-  try { localStorage.setItem(PROF_KEY, JSON.stringify(PROF)); } catch (e) {}
-  if (rerender) { render(); renderBacktest(); }
-}
-function toggleSettings() { state.setOpen = !state.setOpen; renderSettings(); }
-function renderSettings() {
-  document.getElementById("setBtn").textContent = state.setOpen ? "instellingen verbergen" : "instellingen tonen";
-  const f = document.getElementById("setForm");
-  if (!state.setOpen) { f.innerHTML = ""; return; }
-  const inp = (id, lbl, v, step) => `<label>${lbl}<input type="number" id="${id}" step="${step}" inputmode="decimal" value="${v}"></label>`;
-  f.innerHTML = `<div class="formgrid">
-    ${inp("sCap", "Handelskapitaal €", SET.capital, 1)}${inp("sRisk", "Risico per trade %", SET.riskPct, 0.1)}
-    <label>Max. hefboom<select id="sLev">${[1, 2, 3, 4, 5].map(n => `<option ${n === SET.maxLev ? "selected" : ""}>${n}</option>`).join("")}</select></label>
-    ${inp("sRR", "Min. winst/risico", SET.minRR, 0.1)}${inp("sMaker", "Makerfee %", SET.maker, 0.01)}${inp("sTaker", "Takerfee %", SET.taker, 0.01)}
-    ${inp("sBorrow", "Leenrente % per dag", SET.borrow, 0.001)}</div>
-    <div class="label" style="margin:14px 0 0;">STRATEGIEPROFIEL</div>
-    <div class="formgrid">${Object.keys(PROF_OPTS).map(k => `<label>${{ stop: "Stop", entry: "Instap", exit: "Uitstap", trend: "Trendfilter" }[k]}<select id="p_${k}">${PROF_OPTS[k].map(o => `<option value="${o[0]}" ${PROF[k] === o[0] ? "selected" : ""}>${o[1]}</option>`).join("")}</select></label>`).join("")}</div>
-    <div class="btnrow"><button class="primary" onclick="saveSettings()">Opslaan</button></div>
-    <div class="muted" style="margin-top:8px;">Fees staan op het Bitvavo-standaardtarief. De leenrente wisselt; controleer het actuele percentage in de Bitvavo-app.</div>`;
-}
-function saveSettings() {
-  const g = id => parseFloat(document.getElementById(id).value);
-  const n = { capital: g("sCap"), riskPct: g("sRisk"), maxLev: parseInt(document.getElementById("sLev").value, 10), minRR: g("sRR"), maker: g("sMaker"), taker: g("sTaker"), borrow: g("sBorrow") };
-  if (Object.values(n).some(v => !(v >= 0))) { alert("Controleer de ingevulde waarden."); return; }
-  if (n.riskPct > 5 && !confirm("Meer dan 5% risico per trade kan je account snel leeghalen. Toch opslaan?")) return;
-  SET = Object.assign({}, SET, n);
-  try { localStorage.setItem(SET_KEY, JSON.stringify(SET)); } catch (e) {}
-  const np = {}; Object.keys(PROF_OPTS).forEach(k => np[k] = document.getElementById("p_" + k).value);
-  setProf(np, false);
-  state.setOpen = false; renderSettings(); render();
-}
-
-/* ---------- render ---------- */
-function setBadge(title, sub, add, color) {
-  const a = document.getElementById("advice");
-  a.textContent = title; a.style.color = color;
-  document.getElementById("adviceSub").textContent = sub || "";
-  document.getElementById("adviceAdd").textContent = add || "";
-  document.getElementById("badge").style.border = `1px solid ${color}`;
-}
-
-function render() {
-  if (state.btBusy) return; // de terugtest gebruikt tijdelijk state.data
-  const price = currentPrice();
-  if (price) document.getElementById("price").textContent = "€" + fmt(price);
-  let chk = "", bad = false;
-  if (state.check && state.check.p > 0 && price) {
-    const dev = state.check.p / price - 1;
-    bad = Math.abs(dev) > 0.01;
-    chk = bad ? ` · ${state.check.src} zegt €${fmt(state.check.p)}` : ` · gecontroleerd met ${state.check.src} ✓`;
-  }
-  document.getElementById("meta").textContent = state.lastUpdate
-    ? `bron: ${state.source} · update ${state.lastUpdate.toLocaleTimeString("nl-NL")}${chk}` : "verbinden...";
-  const pw = document.getElementById("priceWarn");
-  pw.style.display = bad ? "block" : "none";
-  if (bad) pw.textContent = `LET OP: de koers van ${state.source} (€${fmt(price)}) wijkt ${pct((state.check.p / price - 1) * 100)} af van ${state.check.src} (€${fmt(state.check.p)}). Signalen, stops en niveaus kunnen dan niet kloppen. Controleer de koers in de Bitvavo-app voordat je iets doet.`;
-
-  const res = {}; IVS.forEach(iv => res[iv] = analyze(iv));
-  const complete = IVS.every(iv => res[iv]);
-  const sig = {}, t = {};
-  IVS.forEach(iv => { if (res[iv]) { sig[iv] = res[iv].signal; t[iv === "15m" ? "m15" : iv] = res[iv].trend; } });
-  const trends = { h1: t["1h"], h4: t["4h"], d1: t["1d"] };
-  state.zones = complete && price ? buildZones(price) : [];
-  state.plan = null;
-
-  // tabel per timeframe
-  const SIGTXT = { K: "KOPEN", N: "NIETS", V: "VERKOPEN" };
-  document.getElementById("tfBody").innerHTML = IVS.map(iv => {
-    const r = res[iv];
-    if (!r) return `<tr><td>${IV_LABEL[iv]}</td><td colspan="3" class="muted">geen data</td></tr>`;
-    return `<tr><td>${IV_LABEL[iv]}</td><td class="${r.signal.toLowerCase()}">${SIGTXT[r.signal]}</td>
-      <td class="${r.trend === "up" ? "k" : "v"}">${r.trend === "up" ? "▲ op" : "▼ neer"}</td>
-      <td>${r.rsi != null ? r.rsi.toFixed(0) : "-"}</td></tr>`;
-  }).join("");
-
-  renderPosition(price);
-
-  // advies
-  const pos = state.pos;
-  const label = document.getElementById("badgeLabel");
-  if (!complete) {
-    label.textContent = "ADVIES";
-    setBadge("WACHTEN OP DATA", "Nog niet alle vier de timeframes geladen.", "", "#5a7a63");
-  } else if (pos) {
-    label.textContent = pos.side === "long" ? "ADVIES · OPEN LONG" : "ADVIES · OPEN SHORT";
-    const stopHit = pos.stop && price && (pos.side === "long" ? price <= pos.stop : price >= pos.stop);
-    if (stopHit) {
-      setBadge("STOP GERAAKT", `Koers €${fmt(price)} is voorbij je stop van €${fmt(pos.stop)}. Sluit de positie, wat de matrix ook zegt.`, "", "#ff4d4d");
-    } else {
-      const code = act(pos.side, sig["15m"], sig["1h"], sig["4h"], sig["1d"], trends);
-      const [title, sub] = TEXT[pos.side][code];
-      const add = addAllowed(pos.side, sig, trends)
-        ? (pos.side === "long" ? "Bijkopen toegestaan (max. helft eerste positie)." : "Bijshorten toegestaan (max. helft eerste positie).")
-        : (pos.side === "long" ? "Niet bijkopen." : "Niet bijshorten.");
-      const noStop = pos.stop ? "" : " · Let op: je hebt nog geen stop ingesteld.";
-      let tip = "";
-      if (pos.stop && price) {
-        const sg = pos.side === "long" ? 1 : -1, R = sg * (price - pos.entry) / Math.abs(pos.entry - pos.stop);
-        const ta = pos.trail ? trailAdvice(pos) : null;
-        if (ta && ta.move) tip = ` · Meeschuiven: zet je stop op €${fmt(ta.stop)} (${ta.why}).`;
-        else if (ta) tip = ` · Stop meeschuiven: ${ta.why}.`;
-        else if (pos.tgt && sg * (price - pos.tgt) >= 0) tip = ` · Doel €${fmt(pos.tgt)} bereikt: neem (deels) winst.`;
-        else if (R >= 1 && sg * (pos.stop - pos.entry) < 0) tip = ` · Tip: 1× risico in de plus, zet je stop op je instap (€${fmt(pos.entry)}).`;
-      }
-      setBadge(title, sub + noStop + tip, add, CODES[code].col);
-    }
-  } else {
-    label.textContent = "ADVIES · GEEN POSITIE";
-    const eL = fullCheck("long", res, trends), eS = fullCheck("short", res, trends);
-    if (eL.ok || eS.ok) {
-      const side = eL.ok ? "long" : "short", L = side === "long", f = L ? eL : eS;
-      const p = makePlan(side, res, trends, price, f.kind);
-      state.plan = p; logPlan(p);
-      if (!p) setBadge(L ? "LONG MOGELIJK" : "SHORT MOGELIJK", "Plan kon niet berekend worden.", "", L ? "#33ff99" : "#ff4d4d");
-      else if (p.blocked) setBadge(L ? "LONG-SIGNAAL · NIET INSTAPPEN" : "SHORT-SIGNAAL · NIET INSTAPPEN", p.blocked + ".", "De matrix is groen, maar het plan klopt niet. Zie PLAN.", "#ffb000");
-      else setBadge((L ? (p.limit ? "LONG · LIMIETORDER" : "LONG MOGELIJK") : (p.limit ? "SHORT · LIMIETORDER" : "SHORT MOGELIJK")) + (p.kind === "terugval" ? " · TERUGVAL" : " · KRUISING"),
-        `${p.limit ? "Limiet" : "Instap"} €${fmt(p.entry)} · stop €${fmt(p.stop)} · ${p.trail ? "stop meeschuiven, geen vast doel" : `doel €${fmt(p.tgt)} · winst/risico ${nl1(p.rr)}`}`,
-        `Risico ${p.risk}${p.reasons.length ? ": " + p.reasons.join(", ").toLowerCase() : ""}`, p.riskCol);
-    }
-    else if (eL.nearPb && eL.p.turnWhy === "late") setBadge("TE LAAT · LONG AL GELOPEN", "Trend op 1u en 4u is opwaarts en de 15m staat al omhoog, maar de koers is sinds de draai te ver opgelopen. Instappen nu betekent een verre stop en weinig ruimte.", "Wacht op een nieuwe terugval richting de 1u-EMA21.", "#ffb000");
-    else if (eS.nearPb && eS.p.turnWhy === "late") setBadge("TE LAAT · SHORT AL GELOPEN", "Trend op 1u en 4u is neerwaarts en de 15m staat al omlaag, maar de koers is sinds de draai te ver gezakt. Instappen nu betekent een verre stop en weinig ruimte.", "Wacht op een nieuwe opleving richting de 1u-EMA21.", "#ffb000");
-    else if (eL.nearPb) setBadge("NOG NIET · LONG IN AANLOOP", "Trend op 1u en 4u is opwaarts en de koers is teruggevallen naar de 1u-EMA21 of een steun. Wacht tot de 15m weer omhoog draait (EMA9 boven EMA21).", "Houd de app open of kijk over een kwartier opnieuw.", "#ffb000");
-    else if (eS.nearPb) setBadge("NOG NIET · SHORT IN AANLOOP", "Trend op 1u en 4u is neerwaarts en de koers is opgeveerd naar de 1u-EMA21 of een weerstand. Wacht tot de 15m weer omlaag draait (EMA9 onder EMA21).", "Houd de app open of kijk over een kwartier opnieuw.", "#ffb000");
-    else if (eL.nearX) setBadge("NOG NIET · LONG IN AANLOOP", "4h en 1d staan goed en de 1h-trend is opwaarts, maar er is nog geen terugval of bevestigd 1h-koopsignaal.", "Wachten op een terugval naar de 1u-EMA21.", "#ffb000");
-    else if (eS.nearX) setBadge("NOG NIET · SHORT IN AANLOOP", "4h en 1d staan goed en de 1h-trend is neerwaarts, maar er is nog geen opleving of bevestigd 1h-verkoopsignaal.", "Wachten op een opleving naar de 1u-EMA21.", "#ffb000");
-    else setBadge("NIETS DOEN", "Geen instap in welke richting dan ook: de timeframes spreken elkaar tegen of geven geen signaal.", "", "#5a7a63");
-  }
-  renderEntry(complete, res, trends, price);
-  renderPlan(state.plan);
-  if (complete && price) renderLevels(price);
-  evalLog(); renderLog();
-
-  // matrix
-  const view = pos ? pos.side : state.matrixView;
-  document.getElementById("matrixLabel").textContent = view === "long" ? "BESLISMATRIX · LONG" : "BESLISMATRIX · SHORT";
-  document.getElementById("matrixToggle").innerHTML = pos ? "" :
-    `<button class="${view === "long" ? "active" : ""}" onclick="setView('long')">Long-matrix</button>
-     <button class="${view === "short" ? "active" : ""}" onclick="setView('short')">Short-matrix</button>`;
-  if (complete) renderGrid(view, sig, trends);
-
-  // grafiek + redenering
-  const cr = res[state.chartIv];
-  document.getElementById("reasonLabel").textContent = `REDENERING · ${IV_LABEL[state.chartIv]}`;
-  if (cr) {
-    document.getElementById("rsiLabel").textContent = `RSI(14): ${cr.rsi.toFixed(1)}`;
-    document.getElementById("reasons").innerHTML = cr.reasons.map(r => `<div>› ${r}</div>`).join("");
-    const fc = state.data[state.chartIv].map(c => c.close);
-    document.getElementById("chart").innerHTML = renderChart(state.data[state.chartIv], calcEMA(fc, 9), calcEMA(fc, 21));
-    document.getElementById("volumeChart").innerHTML = renderVolumeChart(state.data[state.chartIv]);
-  }
-}
-function renderEntry(complete, res, t, price) {
-  const grid = document.getElementById("entryGrid"), note = document.getElementById("entryNote");
-  if (!complete) { grid.innerHTML = `<div class="muted">Wachten op alle vier de timeframes.</div>`; note.textContent = ""; return; }
-  note.textContent = state.pos ? `Je hebt al een ${state.pos.side}. Ter informatie; open niet tegelijk de andere richting.` : "Beide richtingen worden steeds apart getoetst.";
-  grid.innerHTML = ["long", "short"].map(side => {
-    const e = fullCheck(side, res, t), col = side === "long" ? "#33ff99" : "#ff4d4d";
-    const st = e.ok ? [`INSTAP MOGELIJK · ${e.kind.toUpperCase()}`, col] : e.near ? ["IN AANLOOP", "#ffb000"] : ["GEEN INSTAP", "#5a7a63"];
-    const ckl = arr => arr.map(c => `<div class="${c[1] ? "k" : "muted"}">${c[1] ? "✓" : "✗"} ${c[0]}</div>`).join("");
-    const ss = suggestStop(side);
-    const sg = ss && price ? `Stop-suggestie €${fmt(ss)} (${(Math.abs(price - ss) / price * 100).toFixed(1)}% van de koers, voorbij het 1h-${side === "long" ? "dal" : "top"} van de laatste 12 uur)` : "";
-    return `<div class="entry" style="border-color:${e.ok ? col : "#1e3327"}">
-      <h3 style="color:${col}">${side === "long" ? "▲ LONG" : "▼ SHORT"}</h3>
-      <div class="st" style="color:${st[1]}">${st[0]}</div>
-      <div class="ck"><div class="label" style="margin:4px 0 2px;">TERUGVAL IN TREND</div>${ckl(e.p.checks)}
-        <div class="label" style="margin:8px 0 2px;">KRUISING (ORIGINEEL)</div>${ckl(e.x.checks)}</div>
-      <div class="sg">${sg}</div>${planLine(side, e, res, t, price)}</div>`;
-  }).join("");
-}
-function planLine(side, e, res, t, price) {
-  if (!e.ok) return "";
-  const p = state.plan && state.plan.side === side ? state.plan : makePlan(side, res, t, price, e.kind);
-  if (!p) return "";
-  if (p.blocked) return `<div class="ck n" style="margin-top:6px;">✗ ${p.blocked}</div>`;
-  return `<div class="ck" style="margin-top:6px;"><div class="label" style="margin:8px 0 2px;">PLANTOETS</div><div class="${p.stretched ? "n" : "k"}">${p.stretched ? "✗ Uitgerekt: limietorder op €" + fmt(p.entry) : "✓ Niet uitgerekt"}</div>
-    <div class="k">✓ ${p.trail ? "Ruimte tot eerste niveau" : "Winst/risico na kosten"} ${nl1(p.rr)}</div><div style="color:${p.riskCol}">● Risico ${p.risk}</div></div>`;
-}
-function setView(v) { state.matrixView = v; render(); }
-/* Meeschuivende stop voor een open positie, met exact dezelfde regel als de terugtest. */
-function trailAdvice(pos) {
-  const c = closedC("15m"); if (!c || !pos.A || !pos.stop) return null;
-  const L = pos.side === "long", sg = L ? 1 : -1, f = curFees();
-  const stop0 = pos.stop0 || pos.stop, risk = Math.abs(pos.entry - stop0);
-  const since = c.filter(x => x.time >= new Date(pos.date).getTime());
-  if (!since.length) return { move: false, why: "nog geen gesloten 15m-candle sinds je instap" };
-  const best = L ? Math.max(pos.entry, ...since.map(x => x.close)) : Math.min(pos.entry, ...since.map(x => x.close));
-  if (sg * (best - pos.entry) < risk) return { move: false, why: `pas vanaf €${fmt(pos.entry + sg * risk)} (1× je risico)` };
-  const be = pos.entry * (1 + sg * (f.maker + f.taker + f.borrow)), tr = best - sg * TRAIL_K * pos.A;
-  const ns = L ? Math.max(be, tr) : Math.min(be, tr);
-  if (sg * (ns - pos.stop) > 0.05 * pos.A) return { move: true, stop: Math.round(ns), why: sg * (tr - be) > 0 ? `${String(TRAIL_K).replace(".", ",")}× ATR achter de beste slotkoers €${fmt(best)}` : "naar je instap plus kosten" };
-  return { move: false, why: `je stop van €${fmt(pos.stop)} staat goed` };
-}
-
-function renderPosition(price) {
-  const p = state.pos;
-  const body = document.getElementById("posBody");
-  const actions = document.getElementById("posActions");
-  const form = document.getElementById("posForm");
-  if (p) {
-    const dir = p.side === "long" ? 1 : -1;
-    const move = price ? dir * (price - p.entry) / p.entry * 100 : 0;
-    const liq = liqPrice(p);
-    let html = `<div><span class="${p.side === "long" ? "k" : "v"}">${p.side.toUpperCase()}</span> · ${p.lev}x · instap €${fmt(p.entry)} (${new Date(p.date).toLocaleDateString("nl-NL")})</div>`;
-    if (price) html += `<div>Resultaat: <span class="${move >= 0 ? "k" : "v"}">${pct(move * p.lev)}</span> op je inleg <span class="muted">(koers ${pct(move)})</span></div>`;
-    if (p.stop) {
-      const dist = price ? Math.abs(price - p.stop) / price * 100 : 0;
-      const risk = Math.abs(p.entry - p.stop) / p.entry * 100 * p.lev;
-      html += `<div>Stop €${fmt(p.stop)} · ${dist.toFixed(1)}% van de koers · max. verlies ±${risk.toFixed(1)}% van je inleg</div>`;
-    } else html += `<div class="warn">Geen stop ingesteld.</div>`;
-    if (p.tgt) html += `<div>Doel €${fmt(p.tgt)}${price ? ` · nog ${(Math.abs(p.tgt - price) / price * 100).toFixed(1)}%` : ""}</div>`;
-    if (p.size) { const h = (Date.now() - new Date(p.date).getTime()) / 36e5; html += `<div class="muted">Positie €${fmt(p.size)} · leenrente tot nu ±€${(p.size * SET.borrow / 100 * h / 24).toFixed(2).replace(".", ",")}</div>`; }
-    if (liq) {
-      html += `<div>Liquidatie ±€${fmt(liq)} <span class="muted">(grove schatting)</span></div>`;
-      if (!p.stop) html += `<div class="warn">Met ${p.lev}x hefboom zonder stop riskeer je liquidatie.</div>`;
-      else if ((p.side === "long" && p.stop <= liq * 1.02) || (p.side === "short" && p.stop >= liq * 0.98)) html += `<div class="warn">Je stop ligt (bijna) voorbij de liquidatieprijs. Zet hem dichter bij je instap of verlaag je hefboom.</div>`;
-    }
-    body.innerHTML = html;
-    actions.innerHTML = `<button class="primary" onclick="toggleForm()">${state.formOpen ? "annuleren" : "stop / gegevens aanpassen"}</button>
-      <button onclick="closePos()">✓ Positie gesloten</button>`;
-  } else {
-    body.innerHTML = `<div class="muted">Geen open positie.</div>`;
-    actions.innerHTML = `<button class="long" onclick="quickOpen('long')">✓ Long geopend (nu)</button>
-      <button class="short" onclick="quickOpen('short')">✓ Short geopend (nu)</button>
-      <button onclick="toggleForm()">${state.formOpen ? "annuleren" : "handmatig"}</button>`;
-  }
-  if (state.formOpen) {
-    const q = p || { side: "long", entry: price ? Math.round(price) : "", stop: "", lev: 1 };
-    form.innerHTML = `<div class="formgrid">
-      <label>Richting<select id="fSide"><option value="long" ${q.side === "long" ? "selected" : ""}>Long</option><option value="short" ${q.side === "short" ? "selected" : ""}>Short</option></select></label>
-      <label>Hefboom<input type="number" id="fLev" min="1" step="1" value="${q.lev || 1}"></label>
-      <label>Instapprijs €<input type="number" id="fEntry" step="1" inputmode="decimal" value="${q.entry ? Math.round(q.entry) : ""}"></label>
-      <label>Stop €<input type="number" id="fStop" step="1" inputmode="decimal" value="${q.stop ? Math.round(q.stop) : ""}" placeholder="verplicht aanbevolen"></label>
-      </div>
-      <div class="btnrow"><button class="primary" onclick="saveForm()">Opslaan</button></div>`;
-  } else form.innerHTML = "";
-}
-
-function renderGrid(view, sig, t) {
-  const g = document.getElementById("grid");
-  let h = `<div class="hd">1h →</div>`;
-  S.forEach(x => h += `<div class="hd" style="grid-column:span 3;background:#0c130e;">${x}</div>`);
-  h += `<div class="hd">15m →</div>`;
-  S.forEach(() => S.forEach(m => h += `<div class="hd">${m}</div>`));
-  S.forEach((h4, i) => S.forEach(d1 => {
-    const mt = (d1 === "K" && i > 0) ? "margin-top:4px;" : "";
-    h += `<div class="hd" style="justify-content:flex-start;font-size:10.5px;${mt}">4h ${h4} · 1d ${d1}</div>`;
-    S.forEach(h1 => S.forEach(m => {
-      const c = CODES[act(view, m, h1, h4, d1, t)];
-      const me = m === sig["15m"] && h1 === sig["1h"] && h4 === sig["4h"] && d1 === sig["1d"];
-      h += `<div class="${me ? "me" : ""}" style="background:${c.bg};color:${c.col};font-weight:700;${mt}">${c.c}</div>`;
-    }));
+function analyse(c) {
+  const fee = SET.fee / 100, borrow = SET.borrow / 100;
+  const start = Math.max(...RULES.map(r => r.warm)) + 1; // iedereen dezelfde startdatum, zodat alles eerlijk vergelijkt
+  let split = c.findIndex(x => x.time >= SPLIT); if (split < start + 365) split = Math.floor(start + (c.length - start) * 0.5);
+  const last = c.length - 1;
+  const hold = c.map(x => x.open / c[start].open);
+  const H = { train: stats(hold, c, start, split), test: stats(hold, c, split, last), all: stats(hold, c, start, last) };
+  const rows = [];
+  RULES.forEach(r => (r.kind === "hold" ? [false] : [false, true]).forEach(short => {
+    const pos = positions(r, c, short), sim = simulate(c, pos, fee, borrow);
+    const eq = sim.eq.map(v => v / sim.eq[start]);
+    rows.push({ r, short, pos, eq, train: stats(eq, c, start, split), test: stats(eq, c, split, last), all: stats(eq, c, start, last),
+      nTrain: countTrades(pos, start, split), nTest: countTrades(pos, split, last) });
   }));
-  g.innerHTML = h;
-  const L = TEXT[view];
-  document.getElementById("matrixLegend").innerHTML =
-    `<span>K kopen · N niets · V verkopen · omlijnd = nu · trends live verwerkt</span>` +
-    Object.keys(CODES).map(k => `<span style="color:${CODES[k].col}">${CODES[k].c} ${k === "W" ? "vasthouden, vaker kijken" : L[k][0].toLowerCase()}</span>`).join("");
+  const ok = rows.filter(x => x.train && (x.r.kind === "hold" || (x.train.cagr > 0 && x.nTrain >= 4)));
+  const pick = (ok.length ? ok : rows).slice().sort((a, b) => b.train.score - a.train.score)[0];
+  // oordeel op de controleperiode
+  const t = pick.test, h = H.test;
+  let verdict;
+  if (pick.r.kind === "hold") verdict = ["GEEN REGEL BETER", "#ffb000", "In de leerperiode deed geen enkele trendregel het beter dan gewoon vasthouden. Het eerlijke advies is dan: vasthouden of periodiek bijkopen."];
+  else if (t.ret > 0 && t.score >= h.score && t.dd <= h.dd) verdict = ["BEVESTIGD", "#33ff99", "In de controleperiode beter dan vasthouden, gemeten als rendement per eenheid daling, en met een kleinere diepste daling."];
+  else if (t.ret > 0) verdict = ["DEELS BEVESTIGD", "#ffb000", "In de controleperiode wel winstgevend, maar niet overtuigend beter dan gewoon vasthouden."];
+  else verdict = ["NIET BEVESTIGD", "#ff4d4d", "In de controleperiode verliesgevend. Dan is er geen bewijs dat deze regel werkt; volg het advies dan niet blind."];
+  // DCA in de controleperiode: elke maand hetzelfde bedrag op de eerste opening van de maand
+  let btc = 0, inleg = 0, mo = -1;
+  for (let i = split; i <= last; i++) { const m = new Date(c[i].time).getUTCMonth(); if (m !== mo) { mo = m; btc += (1 - fee) / c[i].open; inleg += 1; } }
+  const dca = btc * c[last].close / inleg - 1;
+  return { rows, pick, H, start, split, last, verdict, dca };
 }
 
-function renderChart(candles, ema9, ema21) {
-  const vis = candles.slice(-60), e9 = ema9.slice(-60), e21 = ema21.slice(-60);
-  const W = 900, H = 320, padL = 50, padR = 10, padT = 10, padB = 10;
-  if (vis.length < 2) return "";
-  const vals = [...vis.map(c => c.high), ...vis.map(c => c.low), ...e9, ...e21];
-  let max = Math.max(...vals), min = Math.min(...vals);
-  const p = state.pos;
-  const extra = [];
-  if (p) { extra.push([p.entry, "#c9e6d3"]); if (p.stop) extra.push([p.stop, "#ff6b6b"]); if (p.tgt) extra.push([p.tgt, "#33ff99"]); }
-  else if (state.plan && !state.plan.blocked) { const q = state.plan; extra.push([q.entry, "#c9e6d3"], [q.stop, "#ff6b6b"]); if (q.tgt != null) extra.push([q.tgt, "#33ff99"]); }
-  extra.forEach(([v]) => { max = Math.max(max, v); min = Math.min(min, v); });
-  const range = max - min || 1, cw = (W - padL - padR) / vis.length;
-  const y = v => padT + (1 - (v - min) / range) * (H - padT - padB);
-  const x = i => padL + i * cw + cw / 2;
-  const line = arr => arr.map((v, i) => `${i === 0 ? "M" : "L"} ${x(i)} ${y(v)}`).join(" ");
-  let svg = "";
-  const lastC = vis[vis.length - 1].close;
-  state.zones.filter(z => z.w >= 2 && z.hi >= min && z.lo <= max).forEach(z => {
-    const top = y(Math.min(z.hi, max)), bot = y(Math.max(z.lo, min));
-    svg += `<rect x="${padL}" y="${top}" width="${W - padL - padR}" height="${Math.max(2, bot - top)}" fill="${z.mid > lastC ? "#ff4d4d" : "#33ff99"}" opacity="0.10"/>`;
-  });
-  vis.forEach((c, i) => {
-    const col = c.close >= c.open ? "#33ff99" : "#ff4d4d", xc = x(i);
-    svg += `<line x1="${xc}" x2="${xc}" y1="${y(c.high)}" y2="${y(c.low)}" stroke="${col}" stroke-width="1"/>`;
-    svg += `<rect x="${xc - cw * 0.32}" y="${Math.min(y(c.open), y(c.close))}" width="${cw * 0.64}" height="${Math.max(1, Math.abs(y(c.open) - y(c.close)))}" fill="${col}"/>`;
-  });
-  svg += `<path d="${line(e9)}" fill="none" stroke="#ffb000" stroke-width="1.3" opacity="0.9"/>`;
-  svg += `<path d="${line(e21)}" fill="none" stroke="#7fb3ff" stroke-width="1.3" opacity="0.9"/>`;
-  extra.forEach(([v, col]) => {
-    svg += `<line x1="${padL}" x2="${W - padR}" y1="${y(v)}" y2="${y(v)}" stroke="${col}" stroke-width="1" stroke-dasharray="6,4"/>`;
-    svg += `<text x="2" y="${y(v) + 4}" fill="${col}" font-size="13" font-family="monospace">${fmt(v / 1000)}k</text>`;
-  });
-  return svg;
+/* ---------- tonen ---------- */
+const POSTXT = { 1: ["IN BTC", "#33ff99"], 0: ["IN EURO", "#ffb000"], "-1": ["SHORT", "#ff4d4d"] };
+function triggerText(row, c, price) {
+  const r = row.r, cl = c.map(x => x.close), i = c.length - 1, p = row.pos[i], L = row.short;
+  const nextClose = new Date(c[i].time + 2 * DAY).toLocaleString("nl-NL", { weekday: "short", hour: "2-digit", minute: "2-digit" });
+  let s = "";
+  if (r.kind === "hold") s = "Deze keuze verandert niet met de koers. Pas als een trendregel in de leerperiode beter scoort, verandert het advies.";
+  if (r.kind === "sma") { const m = sma(cl, r.n)[i]; s = `Het ${r.n}-daags gemiddelde ligt op €${fmt(m)}. ${p === 1 ? `Sluit een dag onder dat niveau, dan ${L ? "SHORT" : "IN EURO"}.` : `Sluit een dag erboven, dan IN BTC.`}`; }
+  if (r.kind === "ema") { const a = ema(cl, r.f)[i], b = ema(cl, r.s)[i]; s = `EMA${r.f} €${fmt(a)} · EMA${r.s} €${fmt(b)} (verschil ${pc(a / b - 1, 1)}). Het advies draait als de snelle onder/boven de trage kruist.`; }
+  if (r.kind === "mom") { const ref = cl[i + 1 - r.n]; s = `De koers van ${r.n} dagen terug is €${fmt(ref)}. ${p === 1 ? `Sluit een dag daaronder, dan ${L ? "SHORT" : "IN EURO"}.` : `Sluit een dag daarboven, dan IN BTC.`} Dit referentieniveau schuift elke dag één dag op.`; }
+  if (r.kind === "don") {
+    const n = r.n, x = Math.floor(n / 2), w = c.slice(i + 1 - n), wx = c.slice(i + 1 - x);
+    const hh = Math.max(...w.map(q => q.high)), ll = Math.min(...w.map(q => q.low)), xh = Math.max(...wx.map(q => q.high)), xl = Math.min(...wx.map(q => q.low));
+    s = p === 1 ? `Uitstappen bij een dagslot onder €${fmt(xl)} (laagste van ${x} dagen).`
+      : p === -1 ? `Short dekken bij een dagslot boven €${fmt(xh)} (hoogste van ${x} dagen).`
+      : `IN BTC bij een dagslot boven €${fmt(hh)} (hoogste van ${n} dagen)${L ? `, SHORT bij een slot onder €${fmt(ll)}` : ""}.`;
+  }
+  return `${s}<div class="muted" style="margin-top:6px;">Het volgende dagslot is ${nextClose} (00:00 UTC). Daarna pas kan het advies veranderen. Huidige koers €${fmt(price)}.</div>`;
 }
-function renderVolumeChart(candles) {
-  const vis = candles.slice(-60);
-  if (vis.length < 2) return "";
-  const W = 900, H = 70, padL = 50, padR = 10;
-  const vols = vis.map(c => c.volume || 0), max = Math.max(...vols) || 1;
-  const avg = vols.reduce((a, b) => a + b, 0) / vols.length, cw = (W - padL - padR) / vis.length;
-  const y = v => H - (v / max) * (H - 6), x = i => padL + i * cw + cw / 2;
-  let svg = "";
-  vis.forEach((c, i) => {
-    const by = y(c.volume || 0);
-    svg += `<rect x="${x(i) - cw * 0.32}" y="${by}" width="${cw * 0.64}" height="${H - by}" fill="${c.close >= c.open ? "#33ff99" : "#ff4d4d"}" opacity="0.55"/>`;
-  });
-  svg += `<line x1="${padL}" x2="${W - padR}" y1="${y(avg)}" y2="${y(avg)}" stroke="#5a7a63" stroke-width="1" stroke-dasharray="4,3"/>`;
-  return svg;
+function render() {
+  const A = S.res, c = S.candles, row = A.pick, i = A.last, p = row.pos[i];
+  const [t, col] = POSTXT[p];
+  document.getElementById("advice").textContent = t; document.getElementById("advice").style.color = col;
+  document.getElementById("badge").style.border = `1px solid ${col}`;
+  let j = i; while (j > 0 && row.pos[j - 1] === p) j--;
+  const what = p === 1 ? "Houd BTC aan, of koop als je nog in euro's zit." : p === 0 ? "Houd euro's aan, of verkoop je BTC als je die nog hebt." : "Open of houd een short, zonder hefboom. Let op de leenrente.";
+  document.getElementById("adviceSub").innerHTML = `${what}<br><span class="muted">Regel: ${row.r.name} · ${row.short ? "long/short" : "long/euro"} · sinds het slot van ${dt(c[j].time)} (koers €${fmt(c[j].close)})</span>`;
+  document.getElementById("trust").innerHTML = `<div class="trust" style="color:${A.verdict[1]};border-color:${A.verdict[1]};">${A.verdict[0]}</div><div class="muted" style="font-size:11px;margin-top:6px;">${A.verdict[2]}</div>`;
+  document.getElementById("trigger").innerHTML = triggerText(row, c, S.price || c[i].close);
+  const g = (lbl, v, cls) => `<div><span>${lbl}</span><b class="${cls || ""}">${v}</b></div>`;
+  const cls = v => v >= 0 ? "k" : "v";
+  document.getElementById("proof").innerHTML = `
+    <div class="muted" style="margin-bottom:6px;">Leerperiode ${dt(c[A.start].time)} t/m ${dt(c[A.split].time)} · controleperiode t/m ${dt(c[A.last].time)} · bron ${S.src} · fee ${String(SET.fee).replace(".", ",")}% per wissel</div>
+    <div class="label" style="margin:6px 0 4px;">CONTROLEPERIODE (NIET GEBRUIKT BIJ DE KEUZE)</div>
+    <div class="grid2">
+      ${g("Regel · per jaar", pc(row.test.cagr), cls(row.test.cagr))}${g("Vasthouden · per jaar", pc(A.H.test.cagr), cls(A.H.test.cagr))}
+      ${g("Regel · diepste daling", pc(-row.test.dd), "v")}${g("Vasthouden · diepste daling", pc(-A.H.test.dd), "v")}
+      ${g("Regel · totaal", pc(row.test.ret), cls(row.test.ret))}${g("Maandelijks kopen · op inleg", pc(A.dca), cls(A.dca))}
+      ${g("Wissels", row.nTest)}${g("Tijd in de markt", Math.round(row.r ? exposure(row, A.split, A.last) * 100 : 0) + "%")}
+    </div>
+    <div class="label" style="margin:10px 0 4px;">LEERPERIODE</div>
+    <div class="grid2">
+      ${g("Regel · per jaar", pc(row.train.cagr), cls(row.train.cagr))}${g("Vasthouden · per jaar", pc(A.H.train.cagr), cls(A.H.train.cagr))}
+      ${g("Regel · diepste daling", pc(-row.train.dd), "v")}${g("Vasthouden · diepste daling", pc(-A.H.train.dd), "v")}
+    </div>`;
+  document.getElementById("chart").innerHTML = chartSvg(row.eq, c.map(x => x.open / c[A.start].open), A.start, A.split, A.last);
+  const sorted = A.rows.slice().sort((a, b) => b.train.score - a.train.score);
+  document.getElementById("table").innerHTML = `<table><thead><tr><th>Regel</th><th>Leer: jaar / dal</th><th>Controle: jaar / dal</th><th>Nu</th></tr></thead><tbody>` +
+    `<tr class="${row.r.kind === "hold" ? "pick" : ""}"><td class="muted">BTC vasthouden${row.r.kind === "hold" ? " · gekozen" : ""}</td><td>${pc(A.H.train.cagr)} / ${pc(-A.H.train.dd)}</td><td>${pc(A.H.test.cagr)} / ${pc(-A.H.test.dd)}</td><td class="k">IN BTC</td></tr>` +
+    sorted.filter(x => x.r.kind !== "hold").map(x => `<tr class="${x === row ? "pick" : ""}"><td>${x.r.name}<div class="muted">${x.short ? "long/short" : "long/euro"} · ${x.nTrain + x.nTest} wissels${x === row ? " · gekozen" : ""}</div></td>
+      <td class="${cls(x.train.cagr)}">${pc(x.train.cagr)}<div class="muted">${pc(-x.train.dd)}</div></td>
+      <td class="${cls(x.test.cagr)}">${pc(x.test.cagr)}<div class="muted">${pc(-x.test.dd)}</div></td>
+      <td style="color:${POSTXT[x.pos[A.last]][1]}">${POSTXT[x.pos[A.last]][0]}</td></tr>`).join("") + `</tbody></table>`;
+}
+function exposure(row, a, b) { let n = 0; for (let i = a; i < b; i++) if (row.pos[i] !== 0) n++; return n / Math.max(1, b - a); }
+function chartSvg(eq, hold, a, s, b) {
+  const W = 900, H = 300, pl = 46, pr = 8, pt = 8, pb = 18, step = Math.max(1, Math.floor((b - a) / 400));
+  const idx = []; for (let i = a; i <= b; i += step) idx.push(i); if (idx[idx.length - 1] !== b) idx.push(b);
+  const vals = idx.flatMap(i => [eq[i], hold[i]]).filter(v => v > 0).map(Math.log);
+  const mx = Math.max(...vals), mn = Math.min(...vals);
+  const x = i => pl + (i - a) / (b - a) * (W - pl - pr), y = v => pt + (1 - (Math.log(Math.max(v, 1e-6)) - mn) / (mx - mn || 1)) * (H - pt - pb);
+  const line = (arr, col, w, dash) => `<path d="${idx.map((i, k) => `${k ? "L" : "M"}${x(i).toFixed(1)} ${y(arr[i]).toFixed(1)}`).join(" ")}" fill="none" stroke="${col}" stroke-width="${w}" ${dash ? 'stroke-dasharray="6,4"' : ""}/>`;
+  let svg = `<line x1="${x(s)}" x2="${x(s)}" y1="${pt}" y2="${H - pb}" stroke="#2c4a38"/>`;
+  [0.5, 1, 2, 5, 10, 20].forEach(v => { const l = Math.log(v); if (l >= mn && l <= mx) svg += `<line x1="${pl}" x2="${W - pr}" y1="${y(v)}" y2="${y(v)}" stroke="#13221a"/><text x="4" y="${y(v) + 4}" fill="#5a7a63" font-size="13" font-family="monospace">${String(v).replace(".", ",")}×</text>`; });
+  return svg + line(hold, "#5a7a63", 1.4, true) + line(eq, "#33ff99", 2.2);
 }
 
-/* ---------- events ---------- */
-document.querySelectorAll("#intervals button[data-iv]").forEach(b => b.addEventListener("click", () => {
-  state.chartIv = b.dataset.iv;
-  document.querySelectorAll("#intervals button[data-iv]").forEach(x => x.classList.toggle("active", x === b));
-  render();
-}));
-document.getElementById("refreshBtn").addEventListener("click", fetchAll);
-setInterval(() => { const c = document.getElementById("cursor"); c.style.opacity = c.style.opacity === "0" ? "1" : "0"; }, 600);
-
-renderSettings();
-renderBacktest();
-render();
-fetchAll();
-state.timer = setInterval(fetchAll, 60000);
+/* ---------- laden ---------- */
+async function load() {
+  const err = document.getElementById("error"); err.style.display = "none";
+  try {
+    const [d, px] = await Promise.all([getCandles(), livePrice()]);
+    S.candles = d.c; S.src = d.src; S.price = px;
+    if (px) document.getElementById("price").textContent = "€" + fmt(px);
+    S.res = analyse(S.candles); render();
+    document.getElementById("meta").textContent = `bron: ${S.src} · ${S.candles.length} dagen · update ${new Date().toLocaleTimeString("nl-NL")}`;
+  } catch (e) {
+    err.style.display = "block"; err.textContent = `Kon de dagcandles niet ophalen of verwerken: ${e.message}. Tik op ververs.`;
+  }
+}
+function saveSet() {
+  const f = parseFloat(document.getElementById("sFee").value), b = parseFloat(document.getElementById("sBorrow").value);
+  if (!(f >= 0) || !(b >= 0)) { alert("Controleer de ingevulde waarden."); return; }
+  SET = { fee: f, borrow: b }; try { localStorage.setItem(SET_KEY, JSON.stringify(SET)); } catch (e) {}
+  if (S.candles) { S.res = analyse(S.candles); render(); }
+}
+document.getElementById("sFee").value = SET.fee; document.getElementById("sBorrow").value = SET.borrow;
+load(); setInterval(load, 15 * 60000);
 </script>
 </body>
 </html>
