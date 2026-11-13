@@ -5,340 +5,247 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="BTC Trend">
+<meta name="apple-mobile-web-app-title" content="BTC Simpel">
 <meta name="theme-color" content="#070b08">
-<title>BTC Trend Terminal</title>
+<title>BTC Simpel</title>
 <style>
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   html { -webkit-text-size-adjust: 100%; }
   body {
-    margin: 0; min-height: 100vh; min-height: 100dvh; background: #070b08; color: #c9e6d3;
+    margin: 0; min-height: 100vh; background: #070b08; color: #c9e6d3;
     font-family: ui-monospace, SFMono-Regular, "JetBrains Mono", "Courier New", monospace;
-    padding: 16px 12px 32px;
-    padding-top: max(16px, env(safe-area-inset-top)); padding-bottom: max(32px, env(safe-area-inset-bottom));
-    padding-left: max(12px, env(safe-area-inset-left)); padding-right: max(12px, env(safe-area-inset-right));
+    padding: max(16px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) max(32px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
   }
-  .wrap { max-width: 860px; margin: 0 auto; }
+  .wrap { max-width: 640px; margin: 0 auto; }
   .panel { border: 1px solid #1e3327; margin-bottom: 12px; }
-  .header { padding: 10px 14px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; }
-  .ticker-label { color: #ffb000; font-size: 12px; letter-spacing: 2px; }
-  .price { font-size: 22px; font-weight: 700; margin-left: 10px; }
-  .meta { font-size: 10.5px; color: #5a7a63; }
-  .badge { padding: 20px 14px; text-align: center; background: #0c130e; }
-  .badge-label { font-size: 10.5px; color: #5a7a63; letter-spacing: 3px; margin-bottom: 6px; }
-  .badge-signal { font-size: 30px; font-weight: 800; letter-spacing: 1px; line-height: 1.2; }
-  .badge-sub { font-size: 12px; margin-top: 8px; line-height: 1.6; }
-  .trust { display: inline-block; padding: 3px 10px; border: 1px solid; margin-top: 10px; font-weight: 700; letter-spacing: 1px; font-size: 12px; }
-  .section { padding: 14px; font-size: 12px; line-height: 1.7; }
-  .label { color: #5a7a63; letter-spacing: 2px; margin-bottom: 8px; font-size: 11px; }
-  .k { color: #33ff99; } .v { color: #ff4d4d; } .n { color: #ffb000; } .muted { color: #5a7a63; }
-  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
-  .grid2 div { border: 1px solid #13221a; padding: 6px 8px; }
-  .grid2 span { display: block; font-size: 10.5px; color: #5a7a63; }
-  .grid2 b { font-size: 14px; }
-  table { width: 100%; border-collapse: collapse; font-size: 12px; }
-  td, th { padding: 6px 4px; text-align: left; border-bottom: 1px solid #13221a; vertical-align: top; }
-  th { color: #5a7a63; font-weight: 400; font-size: 10.5px; }
-  tr.pick td { background: #10301d; }
-  .scroll { overflow-x: auto; }
-  button { background: transparent; color: #c9e6d3; border: 1px solid #2c4a38; padding: 9px 14px; font-family: inherit; font-size: 13px; min-height: 38px; cursor: pointer; }
-  input[type=number] { background: #0c130e; color: #c9e6d3; border: 1px solid #1e3327; width: 100%; padding: 8px 10px; font-family: inherit; font-size: 16px; border-radius: 0; }
-  .formgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
-  .formgrid label { font-size: 11px; color: #5a7a63; display: flex; flex-direction: column; gap: 4px; }
-  .btnrow { margin-top: 10px; display: flex; gap: 8px; flex-wrap: wrap; }
-  .error { border: 1px solid #ff4d4d; color: #ff4d4d; padding: 12px; font-size: 12px; margin-bottom: 10px; display: none; }
-  .legend { font-size: 10.5px; color: #5a7a63; display: flex; gap: 12px; margin-top: 6px; flex-wrap: wrap; }
+  .top { padding: 10px 14px; display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 6px; }
+  .tick { color: #ffb000; font-size: 12px; letter-spacing: 2px; }
+  .price { font-size: 24px; font-weight: 700; }
+  .meta { font-size: 10.5px; color: #5a7a63; width: 100%; }
+  .advice { padding: 26px 14px 22px; text-align: center; background: #0c130e; }
+  .advice .lbl { font-size: 10.5px; color: #5a7a63; letter-spacing: 3px; }
+  .advice .word { font-size: 46px; font-weight: 800; letter-spacing: 2px; margin: 6px 0 8px; line-height: 1.1; }
+  .advice .why { font-size: 13px; line-height: 1.6; }
+  .section { padding: 14px; font-size: 13px; line-height: 1.8; }
+  .label { color: #5a7a63; letter-spacing: 2px; margin-bottom: 6px; font-size: 11px; }
+  .k { color: #33ff99; } .v { color: #ff4d4d; } .n { color: #ffb000; } .m { color: #5a7a63; }
+  .check div { display: flex; gap: 10px; }
+  .check b { width: 18px; flex: none; }
+  button { background: transparent; color: #c9e6d3; border: 1px solid #2c4a38; padding: 12px 16px; font-family: inherit; font-size: 14px; cursor: pointer; width: 100%; }
+  button.go { border-color: #33ff99; color: #33ff99; }
+  input { background: #0c130e; color: #c9e6d3; border: 1px solid #1e3327; width: 100%; padding: 10px; font-family: inherit; font-size: 16px; border-radius: 0; margin: 6px 0 10px; }
+  .error { border: 1px solid #ff4d4d; color: #ff4d4d; padding: 12px; font-size: 12px; margin-bottom: 12px; display: none; }
   svg { display: block; width: 100%; height: auto; }
-  .disclaimer { font-size: 10px; color: #3f5b48; margin-top: 16px; line-height: 1.6; }
-  @media (max-width: 480px) { .price { font-size: 19px; } .badge-signal { font-size: 25px; } td, th { font-size: 11px; padding: 5px 3px; } }
+  .legend { font-size: 10.5px; color: #5a7a63; display: flex; gap: 12px; flex-wrap: wrap; margin-top: 4px; }
+  .small { font-size: 11px; color: #5a7a63; line-height: 1.6; }
 </style>
 </head>
 <body>
 <div class="wrap">
-  <div class="panel header">
-    <div style="display:flex;align-items:baseline;"><span class="ticker-label">BTC/EUR · TREND</span><span class="price" id="price">----</span></div>
+  <div class="panel top">
+    <span class="tick">BTC/EUR</span><span class="price" id="price">----</span>
     <div class="meta" id="meta">verbinden...</div>
   </div>
   <div class="error" id="error"></div>
 
-  <div class="panel badge" id="badge">
-    <div class="badge-label">ADVIES VOOR VANDAAG</div>
-    <div class="badge-signal" id="advice" style="color:#ffb000;">LADEN...</div>
-    <div class="badge-sub" id="adviceSub"></div>
-    <div id="trust"></div>
+  <div class="panel advice" id="box">
+    <div class="lbl">ADVIES NU</div>
+    <div class="word" id="word" style="color:#ffb000;">...</div>
+    <div class="why" id="why"></div>
   </div>
 
   <div class="panel section">
-    <div class="label">WAT ZOU HET ADVIES DOEN OMSLAAN</div>
-    <div id="trigger" class="muted">laden...</div>
+    <div class="label" id="checkLbl">CONTROLE</div>
+    <div class="check" id="check"></div>
+    <div class="small" id="next" style="margin-top:8px;"></div>
   </div>
 
   <div class="panel section">
-    <div class="label">BEWIJS · GEKOZEN REGEL TEGENOVER VASTHOUDEN</div>
-    <div id="proof" class="muted">laden...</div>
-    <svg id="chart" viewBox="0 0 900 300"></svg>
-    <div class="legend"><span class="k">── gekozen regel</span><span>- - BTC vasthouden</span><span>│ einde leerperiode</span><span>log-schaal</span></div>
+    <div class="label">4-UURS KAARSEN · LAATSTE 10 DAGEN</div>
+    <svg id="chart" viewBox="0 0 600 260"></svg>
+    <div class="legend"><span class="k">── EMA 9</span><span class="n">── EMA 21</span><span>▲ koop · ▼ verkoop (zelfde regels)</span></div>
   </div>
 
-  <div class="panel section">
-    <div class="label">ALLE GETESTE REGELS</div>
-    <div class="muted" style="margin-bottom:6px;">Gekozen op de leerperiode alleen. De controleperiode heeft bij de keuze niet meegeteld.</div>
-    <div class="scroll" id="table"></div>
-  </div>
+  <div class="panel section" id="posPanel"></div>
 
   <div class="panel section">
-    <div class="label">INSTELLINGEN</div>
-    <div class="formgrid">
-      <label>Fee per wissel %<input type="number" id="sFee" step="0.01" inputmode="decimal"></label>
-      <label>Leenrente short % per dag<input type="number" id="sBorrow" step="0.001" inputmode="decimal"></label>
+    <div class="label">HOE HET ADVIES TOT STAND KOMT</div>
+    <div class="small">
+      Alles op afgesloten 4-uurs kaarsen, dus het advies kan alleen om 01:00, 05:00, 09:00, 13:00, 17:00 en 21:00 (winter) veranderen.<br>
+      <b>KOPEN</b> als: de grote trend omhoog is (dagslot boven het 50-daags gemiddelde), EMA 9 boven EMA 21 ligt en die kruising vers is (laatste 24 uur), en de laatste kaars groen sluit boven EMA 9.<br>
+      <b>VERKOPEN</b> als je BTC hebt en een 4-uurs kaars sluit onder EMA 21, of de dag sluit onder het 50-daags gemiddelde.<br>
+      <b>HOUDEN</b> als je BTC hebt en geen van beide gebeurt. <b>WACHTEN</b> als je geen BTC hebt en niet alles klopt.
     </div>
-    <div class="btnrow"><button onclick="saveSet()">Opslaan en opnieuw testen</button><button onclick="load()">↻ ververs</button></div>
+    <div class="small" id="track" style="margin-top:10px;"></div>
   </div>
-
-  <div class="disclaimer">
-    Hoe dit werkt: de app haalt alle BTC/EUR-dagcandles op en test een vaste, kleine set gangbare trendregels, elk als long/euro en als long/short.
-    Een signaal ontstaat op het dagslot (00:00 UTC) en wordt uitgevoerd op de opening van de volgende dag; fees per wissel en leenrente op shorts tellen mee.
-    De regel met de beste verhouding tussen rendement en diepste daling in de leerperiode (t/m 2022) wordt gekozen; de controleperiode (vanaf 2023) toont of dat standhoudt.
-    Slippage en belasting zitten er niet in. Het verleden garandeert niets voor de toekomst. Geen financieel advies.
-  </div>
+  <div class="small" style="padding:0 4px;">Geen financieel advies. Ook simpele regels verliezen soms; koop niet met geld dat je niet kunt missen.</div>
 </div>
 
 <script>
-const COIN = { bitvavo: "BTC-EUR", binance: "BTCEUR" };
-const DAY = 864e5, SPLIT = Date.UTC(2023, 0, 1), SET_KEY = "btc_trend_settings";
-const DEF = { fee: 0.25, borrow: 0.03 };
-let SET = (() => { try { return Object.assign({}, DEF, JSON.parse(localStorage.getItem(SET_KEY) || "{}")); } catch (e) { return Object.assign({}, DEF); } })();
-let S = { candles: null, src: "", res: null };
+const H4 = 144e5, DAY = 864e5, POS_KEY = "btc_simpel_pos", FEE = 0.0025;
+const fmt = n => "€" + Math.round(n).toLocaleString("nl-NL");
+const pc = v => (v >= 0 ? "+" : "") + (v * 100).toFixed(1).replace(".", ",") + "%";
+let D = null;
 
-const fmt = n => n.toLocaleString("nl-NL", { maximumFractionDigits: 0 });
-const pc = (v, d = 0) => (v >= 0 ? "+" : "") + (v * 100).toFixed(d).replace(".", ",") + "%";
-const dt = t => new Date(t).toLocaleDateString("nl-NL", { day: "numeric", month: "short", year: "numeric" });
+function loadPos() { try { return JSON.parse(localStorage.getItem(POS_KEY) || "null"); } catch (e) { return null; } }
+function savePos(p) { try { p ? localStorage.setItem(POS_KEY, JSON.stringify(p)) : localStorage.removeItem(POS_KEY); } catch (e) {} }
 
 /* ---------- data ---------- */
-async function fromBitvavo() {
-  const out = new Map(); let end = Date.now();
-  for (let g = 0; g < 8; g++) {
-    const r = await fetch(`https://api.bitvavo.com/v2/${COIN.bitvavo}/candles?interval=1d&limit=1440&end=${end}`, { cache: "no-store" });
-    if (!r.ok) throw new Error(`Bitvavo HTTP ${r.status}`);
-    const raw = await r.json(); if (!Array.isArray(raw) || !raw.length) break;
-    let oldest = Infinity;
-    raw.forEach(k => { const t = +k[0]; oldest = Math.min(oldest, t); out.set(t, { time: t, open: +k[1], high: +k[2], low: +k[3], close: +k[4] }); });
-    if (!(oldest < end) || raw.length < 1440) break; end = oldest - 1;
-  }
-  return [...out.values()];
+async function bitvavo(iv, n) {
+  const r = await fetch(`https://api.bitvavo.com/v2/BTC-EUR/candles?interval=${iv}&limit=${n}`, { cache: "no-store" });
+  if (!r.ok) throw new Error("Bitvavo " + r.status);
+  return (await r.json()).map(k => ({ time: +k[0], open: +k[1], high: +k[2], low: +k[3], close: +k[4] }));
 }
-async function fromBinance() {
-  const out = new Map(); let start = Date.UTC(2017, 0, 1);
-  for (let g = 0; g < 10; g++) {
-    const r = await fetch(`https://api.binance.com/api/v3/klines?symbol=${COIN.binance}&interval=1d&limit=1000&startTime=${start}`, { cache: "no-store" });
-    if (!r.ok) throw new Error(`Binance HTTP ${r.status}`);
-    const raw = await r.json(); if (!Array.isArray(raw) || !raw.length) break;
-    raw.forEach(k => out.set(k[0], { time: k[0], open: +k[1], high: +k[2], low: +k[3], close: +k[4] }));
-    if (raw.length < 1000) break; start = raw[raw.length - 1][0] + 1;
-  }
-  return [...out.values()];
+async function binance(iv, n) {
+  const r = await fetch(`https://api.binance.com/api/v3/klines?symbol=BTCEUR&interval=${iv}&limit=${Math.min(n, 1000)}`, { cache: "no-store" });
+  if (!r.ok) throw new Error("Binance " + r.status);
+  return (await r.json()).map(k => ({ time: k[0], open: +k[1], high: +k[2], low: +k[3], close: +k[4] }));
 }
-async function getCandles() {
-  const errs = [];
-  for (const [name, fn] of [["Bitvavo", fromBitvavo], ["Binance", fromBinance]]) {
+async function candles(iv, n, ms) {
+  let errs = [];
+  for (const [src, fn] of [["Bitvavo", bitvavo], ["Binance", binance]]) {
     try {
       const now = Date.now();
-      const c = (await fn()).filter(x => x.close > 0 && x.time + DAY <= now).sort((a, b) => a.time - b.time);
-      if (c.length < 900) throw new Error(`${name}: te weinig historie (${c.length} dagen)`);
-      if (now - c[c.length - 1].time > 3 * DAY) throw new Error(`${name}: verouderde data`);
-      return { c, src: name };
+      const c = (await fn(iv, n)).filter(x => x.close > 0).sort((a, b) => a.time - b.time);
+      const closed = c.filter(x => x.time + ms <= now);
+      if (closed.length < 100) throw new Error(src + ": te weinig data");
+      return { closed, live: c[c.length - 1].close, src };
     } catch (e) { errs.push(e.message); }
   }
   throw new Error(errs.join(" | "));
 }
-async function livePrice() {
-  try { const r = await fetch(`https://api.bitvavo.com/v2/ticker/price?market=${COIN.bitvavo}`, { cache: "no-store" }); return +(await r.json()).price; } catch (e) { return null; }
-}
-
-/* ---------- indicatoren ---------- */
-function sma(a, n) { const o = new Array(a.length).fill(null); let s = 0; for (let i = 0; i < a.length; i++) { s += a[i]; if (i >= n) s -= a[i - n]; if (i >= n - 1) o[i] = s / n; } return o; }
 function ema(a, n) { const k = 2 / (n + 1), o = []; a.forEach((v, i) => o.push(i ? v * k + o[i - 1] * (1 - k) : v)); return o; }
 
-/* ---------- regels: positie per dag op basis van het slot van die dag (+1 long, 0 euro, -1 short) ---------- */
-const RULES = [
-  { id: "hold", name: "Gewoon vasthouden", warm: 0, kind: "hold" },
-  ...[50, 100, 150, 200].map(n => ({ id: `sma${n}`, name: `Koers vs ${n}-daags gemiddelde`, warm: n, kind: "sma", n })),
-  { id: "ema20_50", name: "EMA20 / EMA50 kruising", warm: 150, kind: "ema", f: 20, s: 50 },
-  { id: "ema50_200", name: "EMA50 / EMA200 kruising", warm: 250, kind: "ema", f: 50, s: 200 },
-  { id: "don20", name: "Uitbraak 20 dagen (uit op 10)", warm: 20, kind: "don", n: 20 },
-  { id: "don55", name: "Uitbraak 55 dagen (uit op 27)", warm: 55, kind: "don", n: 55 },
-  { id: "mom30", name: "Momentum 30 dagen", warm: 30, kind: "mom", n: 30 },
-  { id: "mom90", name: "Momentum 90 dagen", warm: 90, kind: "mom", n: 90 }
-];
-function positions(rule, c, short) {
-  const cl = c.map(x => x.close), N = c.length, pos = new Array(N).fill(0), lo = short ? -1 : 0;
-  if (rule.kind === "hold") return pos.fill(1);
-  if (rule.kind === "sma") { const m = sma(cl, rule.n); for (let i = 0; i < N; i++) pos[i] = m[i] == null ? 0 : cl[i] > m[i] ? 1 : lo; }
-  if (rule.kind === "ema") { const a = ema(cl, rule.f), b = ema(cl, rule.s); for (let i = 0; i < N; i++) pos[i] = a[i] > b[i] ? 1 : lo; }
-  if (rule.kind === "mom") { for (let i = rule.n; i < N; i++) pos[i] = cl[i] > cl[i - rule.n] ? 1 : lo; }
-  if (rule.kind === "don") {
-    const n = rule.n, x = Math.floor(n / 2); let p = 0;
-    for (let i = n; i < N; i++) {
-      const w = c.slice(i - n, i), wx = c.slice(i - x, i);
-      const hh = Math.max(...w.map(q => q.high)), ll = Math.min(...w.map(q => q.low));
-      const xh = Math.max(...wx.map(q => q.high)), xl = Math.min(...wx.map(q => q.low));
-      if (p === 1 && cl[i] < xl) p = 0;
-      if (p === -1 && cl[i] > xh) p = 0;
-      if (p !== 1 && cl[i] > hh) p = 1;
-      else if (short && p !== -1 && cl[i] < ll) p = -1;
-      pos[i] = p;
+/* ---------- regels ---------- */
+function build(h4, d1) {
+  const c = h4.map(x => x.close), e9 = ema(c, 9), e21 = ema(c, 21);
+  const dc = d1.map(x => x.close), d50 = ema(dc, 50);
+  // per 4u-kaars: het laatste dagslot dat op dat moment al bekend was
+  let j = -1; const trend = [], dRef = [];
+  h4.forEach(x => {
+    const t = x.time + H4;
+    while (j + 1 < d1.length && d1[j + 1].time + DAY <= t) j++;
+    trend.push(j >= 50 && dc[j] > d50[j]); dRef.push(j >= 0 ? { close: dc[j], e50: d50[j] } : null);
+  });
+  const crossAge = []; let age = 999;
+  for (let i = 0; i < h4.length; i++) {
+    if (i > 0 && e9[i] > e21[i] && e9[i - 1] <= e21[i - 1]) age = 0; else if (e9[i] > e21[i]) age++; else age = 999;
+    crossAge.push(age);
+  }
+  const buyOk = i => ({
+    trend: trend[i], cross: e9[i] > e21[i], fresh: crossAge[i] <= 5,
+    candle: h4[i].close > h4[i].open && h4[i].close > e9[i]
+  });
+  const sellNow = i => h4[i].close < e21[i] || !trend[i];
+  return { e9, e21, trend, dRef, buyOk, sellNow };
+}
+/* zelfde regels terug in de tijd: wat had dit opgeleverd? */
+function track(h4, R) {
+  let inPos = false, entry = 0, eq = 1, trades = 0, wins = 0; const marks = [];
+  const start = 60;
+  for (let i = start; i < h4.length; i++) {
+    const px = h4[i].close;
+    if (!inPos) {
+      const b = R.buyOk(i);
+      if (b.trend && b.cross && b.fresh && b.candle) { inPos = true; entry = px; eq *= 1 - FEE; marks.push({ i, t: "b" }); }
+    } else if (R.sellNow(i)) {
+      eq *= (px / entry) * (1 - FEE); trades++; if (px * (1 - FEE) ** 2 > entry) wins++; inPos = false; marks.push({ i, t: "s" });
     }
   }
-  for (let i = 0; i < Math.min(N, rule.warm); i++) pos[i] = 0;
-  return pos;
-}
-/* Equity op elke opening. Positie uit het slot van dag i geldt vanaf de opening van dag i+1. */
-function simulate(c, pos, fee, borrow) {
-  const N = c.length, eq = new Array(N).fill(1);
-  let E = 1, p = 0, entryPx = 0, entryE = 1, trades = 0, invested = 0;
-  const val = (px, d) => p === 1 ? entryE * px / entryPx : p === -1 ? Math.max(0, entryE * (2 - px / entryPx) - entryE * borrow * d) : E;
-  let held = 0;
-  for (let k = 1; k < N; k++) {
-    const want = pos[k - 1], px = c[k].open;
-    if (p !== 0) held++;
-    E = val(px, held);
-    if (want !== p) {
-      E *= 1 - fee * Math.abs(want - p);
-      p = want; entryPx = px; entryE = E; held = 0; trades++;
-    }
-    if (p !== 0) invested++;
-    eq[k] = E;
-  }
-  return { eq, trades, exposure: invested / (N - 1) };
-}
-function stats(eq, c, a, b) {
-  if (b - a < 30) return null;
-  const e0 = eq[a], e1 = eq[b], yrs = (c[b].time - c[a].time) / (365.25 * DAY);
-  let peak = e0, dd = 0;
-  for (let i = a; i <= b; i++) { peak = Math.max(peak, eq[i]); dd = Math.max(dd, 1 - eq[i] / peak); }
-  const ret = e1 / e0 - 1, cagr = e0 > 0 && e1 > 0 ? Math.pow(e1 / e0, 1 / yrs) - 1 : -1;
-  return { ret, cagr, dd, score: cagr / Math.max(dd, 0.05) };
-}
-function countTrades(pos, a, b) { let n = 0; for (let i = a + 1; i <= b; i++) if (pos[i] !== pos[i - 1]) n++; return n; }
-
-function analyse(c) {
-  const fee = SET.fee / 100, borrow = SET.borrow / 100;
-  const start = Math.max(...RULES.map(r => r.warm)) + 1; // iedereen dezelfde startdatum, zodat alles eerlijk vergelijkt
-  let split = c.findIndex(x => x.time >= SPLIT); if (split < start + 365) split = Math.floor(start + (c.length - start) * 0.5);
-  const last = c.length - 1;
-  const hold = c.map(x => x.open / c[start].open);
-  const H = { train: stats(hold, c, start, split), test: stats(hold, c, split, last), all: stats(hold, c, start, last) };
-  const rows = [];
-  RULES.forEach(r => (r.kind === "hold" ? [false] : [false, true]).forEach(short => {
-    const pos = positions(r, c, short), sim = simulate(c, pos, fee, borrow);
-    const eq = sim.eq.map(v => v / sim.eq[start]);
-    rows.push({ r, short, pos, eq, train: stats(eq, c, start, split), test: stats(eq, c, split, last), all: stats(eq, c, start, last),
-      nTrain: countTrades(pos, start, split), nTest: countTrades(pos, split, last) });
-  }));
-  const ok = rows.filter(x => x.train && (x.r.kind === "hold" || (x.train.cagr > 0 && x.nTrain >= 4)));
-  const pick = (ok.length ? ok : rows).slice().sort((a, b) => b.train.score - a.train.score)[0];
-  // oordeel op de controleperiode
-  const t = pick.test, h = H.test;
-  let verdict;
-  if (pick.r.kind === "hold") verdict = ["GEEN REGEL BETER", "#ffb000", "In de leerperiode deed geen enkele trendregel het beter dan gewoon vasthouden. Het eerlijke advies is dan: vasthouden of periodiek bijkopen."];
-  else if (t.ret > 0 && t.score >= h.score && t.dd <= h.dd) verdict = ["BEVESTIGD", "#33ff99", "In de controleperiode beter dan vasthouden, gemeten als rendement per eenheid daling, en met een kleinere diepste daling."];
-  else if (t.ret > 0) verdict = ["DEELS BEVESTIGD", "#ffb000", "In de controleperiode wel winstgevend, maar niet overtuigend beter dan gewoon vasthouden."];
-  else verdict = ["NIET BEVESTIGD", "#ff4d4d", "In de controleperiode verliesgevend. Dan is er geen bewijs dat deze regel werkt; volg het advies dan niet blind."];
-  // DCA in de controleperiode: elke maand hetzelfde bedrag op de eerste opening van de maand
-  let btc = 0, inleg = 0, mo = -1;
-  for (let i = split; i <= last; i++) { const m = new Date(c[i].time).getUTCMonth(); if (m !== mo) { mo = m; btc += (1 - fee) / c[i].open; inleg += 1; } }
-  const dca = btc * c[last].close / inleg - 1;
-  return { rows, pick, H, start, split, last, verdict, dca };
+  if (inPos) eq *= h4[h4.length - 1].close / entry;
+  const hold = h4[h4.length - 1].close / h4[start].close;
+  return { eq, trades, wins, hold, marks, days: Math.round((h4[h4.length - 1].time - h4[start].time) / DAY) };
 }
 
 /* ---------- tonen ---------- */
-const POSTXT = { 1: ["IN BTC", "#33ff99"], 0: ["IN EURO", "#ffb000"], "-1": ["SHORT", "#ff4d4d"] };
-function triggerText(row, c, price) {
-  const r = row.r, cl = c.map(x => x.close), i = c.length - 1, p = row.pos[i], L = row.short;
-  const nextClose = new Date(c[i].time + 2 * DAY).toLocaleString("nl-NL", { weekday: "short", hour: "2-digit", minute: "2-digit" });
-  let s = "";
-  if (r.kind === "hold") s = "Deze keuze verandert niet met de koers. Pas als een trendregel in de leerperiode beter scoort, verandert het advies.";
-  if (r.kind === "sma") { const m = sma(cl, r.n)[i]; s = `Het ${r.n}-daags gemiddelde ligt op €${fmt(m)}. ${p === 1 ? `Sluit een dag onder dat niveau, dan ${L ? "SHORT" : "IN EURO"}.` : `Sluit een dag erboven, dan IN BTC.`}`; }
-  if (r.kind === "ema") { const a = ema(cl, r.f)[i], b = ema(cl, r.s)[i]; s = `EMA${r.f} €${fmt(a)} · EMA${r.s} €${fmt(b)} (verschil ${pc(a / b - 1, 1)}). Het advies draait als de snelle onder/boven de trage kruist.`; }
-  if (r.kind === "mom") { const ref = cl[i + 1 - r.n]; s = `De koers van ${r.n} dagen terug is €${fmt(ref)}. ${p === 1 ? `Sluit een dag daaronder, dan ${L ? "SHORT" : "IN EURO"}.` : `Sluit een dag daarboven, dan IN BTC.`} Dit referentieniveau schuift elke dag één dag op.`; }
-  if (r.kind === "don") {
-    const n = r.n, x = Math.floor(n / 2), w = c.slice(i + 1 - n), wx = c.slice(i + 1 - x);
-    const hh = Math.max(...w.map(q => q.high)), ll = Math.min(...w.map(q => q.low)), xh = Math.max(...wx.map(q => q.high)), xl = Math.min(...wx.map(q => q.low));
-    s = p === 1 ? `Uitstappen bij een dagslot onder €${fmt(xl)} (laagste van ${x} dagen).`
-      : p === -1 ? `Short dekken bij een dagslot boven €${fmt(xh)} (hoogste van ${x} dagen).`
-      : `IN BTC bij een dagslot boven €${fmt(hh)} (hoogste van ${n} dagen)${L ? `, SHORT bij een slot onder €${fmt(ll)}` : ""}.`;
-  }
-  return `${s}<div class="muted" style="margin-top:6px;">Het volgende dagslot is ${nextClose} (00:00 UTC). Daarna pas kan het advies veranderen. Huidige koers €${fmt(price)}.</div>`;
-}
 function render() {
-  const A = S.res, c = S.candles, row = A.pick, i = A.last, p = row.pos[i];
-  const [t, col] = POSTXT[p];
-  document.getElementById("advice").textContent = t; document.getElementById("advice").style.color = col;
-  document.getElementById("badge").style.border = `1px solid ${col}`;
-  let j = i; while (j > 0 && row.pos[j - 1] === p) j--;
-  const what = p === 1 ? "Houd BTC aan, of koop als je nog in euro's zit." : p === 0 ? "Houd euro's aan, of verkoop je BTC als je die nog hebt." : "Open of houd een short, zonder hefboom. Let op de leenrente.";
-  document.getElementById("adviceSub").innerHTML = `${what}<br><span class="muted">Regel: ${row.r.name} · ${row.short ? "long/short" : "long/euro"} · sinds het slot van ${dt(c[j].time)} (koers €${fmt(c[j].close)})</span>`;
-  document.getElementById("trust").innerHTML = `<div class="trust" style="color:${A.verdict[1]};border-color:${A.verdict[1]};">${A.verdict[0]}</div><div class="muted" style="font-size:11px;margin-top:6px;">${A.verdict[2]}</div>`;
-  document.getElementById("trigger").innerHTML = triggerText(row, c, S.price || c[i].close);
-  const g = (lbl, v, cls) => `<div><span>${lbl}</span><b class="${cls || ""}">${v}</b></div>`;
-  const cls = v => v >= 0 ? "k" : "v";
-  document.getElementById("proof").innerHTML = `
-    <div class="muted" style="margin-bottom:6px;">Leerperiode ${dt(c[A.start].time)} t/m ${dt(c[A.split].time)} · controleperiode t/m ${dt(c[A.last].time)} · bron ${S.src} · fee ${String(SET.fee).replace(".", ",")}% per wissel</div>
-    <div class="label" style="margin:6px 0 4px;">CONTROLEPERIODE (NIET GEBRUIKT BIJ DE KEUZE)</div>
-    <div class="grid2">
-      ${g("Regel · per jaar", pc(row.test.cagr), cls(row.test.cagr))}${g("Vasthouden · per jaar", pc(A.H.test.cagr), cls(A.H.test.cagr))}
-      ${g("Regel · diepste daling", pc(-row.test.dd), "v")}${g("Vasthouden · diepste daling", pc(-A.H.test.dd), "v")}
-      ${g("Regel · totaal", pc(row.test.ret), cls(row.test.ret))}${g("Maandelijks kopen · op inleg", pc(A.dca), cls(A.dca))}
-      ${g("Wissels", row.nTest)}${g("Tijd in de markt", Math.round(row.r ? exposure(row, A.split, A.last) * 100 : 0) + "%")}
-    </div>
-    <div class="label" style="margin:10px 0 4px;">LEERPERIODE</div>
-    <div class="grid2">
-      ${g("Regel · per jaar", pc(row.train.cagr), cls(row.train.cagr))}${g("Vasthouden · per jaar", pc(A.H.train.cagr), cls(A.H.train.cagr))}
-      ${g("Regel · diepste daling", pc(-row.train.dd), "v")}${g("Vasthouden · diepste daling", pc(-A.H.train.dd), "v")}
-    </div>`;
-  document.getElementById("chart").innerHTML = chartSvg(row.eq, c.map(x => x.open / c[A.start].open), A.start, A.split, A.last);
-  const sorted = A.rows.slice().sort((a, b) => b.train.score - a.train.score);
-  document.getElementById("table").innerHTML = `<table><thead><tr><th>Regel</th><th>Leer: jaar / dal</th><th>Controle: jaar / dal</th><th>Nu</th></tr></thead><tbody>` +
-    `<tr class="${row.r.kind === "hold" ? "pick" : ""}"><td class="muted">BTC vasthouden${row.r.kind === "hold" ? " · gekozen" : ""}</td><td>${pc(A.H.train.cagr)} / ${pc(-A.H.train.dd)}</td><td>${pc(A.H.test.cagr)} / ${pc(-A.H.test.dd)}</td><td class="k">IN BTC</td></tr>` +
-    sorted.filter(x => x.r.kind !== "hold").map(x => `<tr class="${x === row ? "pick" : ""}"><td>${x.r.name}<div class="muted">${x.short ? "long/short" : "long/euro"} · ${x.nTrain + x.nTest} wissels${x === row ? " · gekozen" : ""}</div></td>
-      <td class="${cls(x.train.cagr)}">${pc(x.train.cagr)}<div class="muted">${pc(-x.train.dd)}</div></td>
-      <td class="${cls(x.test.cagr)}">${pc(x.test.cagr)}<div class="muted">${pc(-x.test.dd)}</div></td>
-      <td style="color:${POSTXT[x.pos[A.last]][1]}">${POSTXT[x.pos[A.last]][0]}</td></tr>`).join("") + `</tbody></table>`;
+  const { h4, d1, R, live, src } = D, i = h4.length - 1, pos = loadPos();
+  const b = R.buyOk(i), last = h4[i], d = R.dRef[i];
+  document.getElementById("price").textContent = fmt(live);
+  let word, col, why;
+  if (pos) {
+    const pl = live / pos.price - 1;
+    if (R.sellNow(i)) {
+      word = "VERKOPEN"; col = "#ff4d4d";
+      why = last.close < R.e21[i] ? `De laatste 4-uurs kaars sloot op ${fmt(last.close)}, onder EMA 21 (${fmt(R.e21[i])}). De korte trend is gebroken.`
+        : `De dag sloot onder het 50-daags gemiddelde (${fmt(d.e50)}). De grote trend is omgeslagen.`;
+    } else { word = "HOUDEN"; col = "#33ff99"; why = `De trend is intact. Verkopen pas als een 4-uurs kaars sluit onder EMA 21, nu ${fmt(R.e21[i])}.`; }
+    why += `<br><span class="m">Jouw aankoop ${fmt(pos.price)} · nu <span class="${pl >= 0 ? "k" : "v"}">${pc(pl)}</span></span>`;
+  } else if (b.trend && b.cross && b.fresh && b.candle) {
+    word = "KOPEN"; col = "#33ff99"; why = "Alle vier de voorwaarden kloppen. Koop nu, en tik daarna op <b>Ik heb gekocht</b> zodat de terminal weet wanneer je moet verkopen.";
+  } else {
+    word = "WACHTEN"; col = "#ffb000";
+    why = !b.trend ? "De grote trend is omlaag. Niet kopen tot de dag weer boven het 50-daags gemiddelde sluit."
+      : b.cross && !b.fresh ? "De stijging is al een tijd bezig. Te laat om nu in te stappen; wacht op een nieuwe kruising."
+      : "Nog niet alle voorwaarden kloppen. Zie de controle hieronder.";
+  }
+  document.getElementById("word").textContent = word;
+  document.getElementById("word").style.color = col;
+  document.getElementById("box").style.borderColor = col;
+  document.getElementById("why").innerHTML = why;
+  const row = (ok, t) => `<div><b class="${ok ? "k" : "v"}">${ok ? "✓" : "✗"}</b><span>${t}</span></div>`;
+  if (pos) {
+    document.getElementById("checkLbl").textContent = "VERKOOPSIGNALEN";
+    document.getElementById("check").innerHTML =
+      row(last.close >= R.e21[i], `4-uurs slot ${fmt(last.close)} boven EMA 21 (${fmt(R.e21[i])})`) +
+      row(R.trend[i], `Dagslot ${fmt(d.close)} boven 50-daags gemiddelde (${fmt(d.e50)})`);
+  } else {
+    document.getElementById("checkLbl").textContent = "KOOPVOORWAARDEN";
+    document.getElementById("check").innerHTML =
+      row(b.trend, `Grote trend omhoog: dagslot ${fmt(d.close)} boven 50-daags gemiddelde ${fmt(d.e50)}`) +
+      row(b.cross, `EMA 9 (${fmt(R.e9[i])}) boven EMA 21 (${fmt(R.e21[i])})`) +
+      row(b.fresh, "Kruising is vers (laatste 24 uur)") +
+      row(b.candle, `Laatste kaars groen en boven EMA 9`);
+  }
+  const nx = new Date(last.time + 2 * H4);
+  document.getElementById("next").textContent = `Volgende check: ${nx.toLocaleTimeString("nl-NL", { hour: "2-digit", minute: "2-digit" })} (sluiting 4-uurs kaars).`;
+  document.getElementById("posPanel").innerHTML = pos
+    ? `<div class="label">JOUW POSITIE</div><div>Gekocht op ${new Date(pos.date).toLocaleDateString("nl-NL")} voor ${fmt(pos.price)}</div><div style="margin-top:10px;"><button onclick="sold()">Ik heb verkocht</button></div>`
+    : `<div class="label">JOUW POSITIE</div><div class="m">Je hebt (volgens de terminal) geen BTC. Gekocht? Vul de prijs in.</div><input id="buyPx" type="number" inputmode="decimal" placeholder="aankoopprijs in euro" value="${Math.round(live)}"><button class="go" onclick="bought()">Ik heb gekocht</button>`;
+  const T = D.T;
+  document.getElementById("track").innerHTML = `<b>Terugblik ${T.days} dagen</b> met precies deze regels (0,25% kosten per aan- en verkoop): ${T.trades} afgeronde trades, ${T.wins} met winst, resultaat <span class="${T.eq >= 1 ? "k" : "v"}">${pc(T.eq - 1)}</span>. Gewoon vasthouden in dezelfde periode: <span class="${T.hold >= 1 ? "k" : "v"}">${pc(T.hold - 1)}</span>.`;
+  document.getElementById("chart").innerHTML = chart();
+  document.getElementById("meta").textContent = `bron ${src} · bijgewerkt ${new Date().toLocaleTimeString("nl-NL", { hour: "2-digit", minute: "2-digit" })}`;
 }
-function exposure(row, a, b) { let n = 0; for (let i = a; i < b; i++) if (row.pos[i] !== 0) n++; return n / Math.max(1, b - a); }
-function chartSvg(eq, hold, a, s, b) {
-  const W = 900, H = 300, pl = 46, pr = 8, pt = 8, pb = 18, step = Math.max(1, Math.floor((b - a) / 400));
-  const idx = []; for (let i = a; i <= b; i += step) idx.push(i); if (idx[idx.length - 1] !== b) idx.push(b);
-  const vals = idx.flatMap(i => [eq[i], hold[i]]).filter(v => v > 0).map(Math.log);
-  const mx = Math.max(...vals), mn = Math.min(...vals);
-  const x = i => pl + (i - a) / (b - a) * (W - pl - pr), y = v => pt + (1 - (Math.log(Math.max(v, 1e-6)) - mn) / (mx - mn || 1)) * (H - pt - pb);
-  const line = (arr, col, w, dash) => `<path d="${idx.map((i, k) => `${k ? "L" : "M"}${x(i).toFixed(1)} ${y(arr[i]).toFixed(1)}`).join(" ")}" fill="none" stroke="${col}" stroke-width="${w}" ${dash ? 'stroke-dasharray="6,4"' : ""}/>`;
-  let svg = `<line x1="${x(s)}" x2="${x(s)}" y1="${pt}" y2="${H - pb}" stroke="#2c4a38"/>`;
-  [0.5, 1, 2, 5, 10, 20].forEach(v => { const l = Math.log(v); if (l >= mn && l <= mx) svg += `<line x1="${pl}" x2="${W - pr}" y1="${y(v)}" y2="${y(v)}" stroke="#13221a"/><text x="4" y="${y(v) + 4}" fill="#5a7a63" font-size="13" font-family="monospace">${String(v).replace(".", ",")}×</text>`; });
-  return svg + line(hold, "#5a7a63", 1.4, true) + line(eq, "#33ff99", 2.2);
+function chart() {
+  const { h4, R } = D, n = 60, a = h4.length - n, W = 600, H = 260, pad = 6;
+  const s = h4.slice(a), hi = Math.max(...s.map(x => x.high), ...R.e21.slice(a)), lo = Math.min(...s.map(x => x.low), ...R.e21.slice(a));
+  const x = k => pad + (k + 0.5) * (W - 2 * pad) / n, y = v => pad + (1 - (v - lo) / (hi - lo)) * (H - 2 * pad), bw = (W - 2 * pad) / n * 0.6;
+  let g = "";
+  s.forEach((c, k) => {
+    const up = c.close >= c.open, col = up ? "#33ff99" : "#ff4d4d";
+    g += `<line x1="${x(k)}" x2="${x(k)}" y1="${y(c.high)}" y2="${y(c.low)}" stroke="${col}" stroke-width="1"/>`;
+    g += `<rect x="${x(k) - bw / 2}" y="${y(Math.max(c.open, c.close))}" width="${bw}" height="${Math.max(1, Math.abs(y(c.open) - y(c.close)))}" fill="${up ? "#0c130e" : col}" stroke="${col}"/>`;
+  });
+  const line = (arr, col) => `<path d="${arr.slice(a).map((v, k) => `${k ? "L" : "M"}${x(k).toFixed(1)} ${y(v).toFixed(1)}`).join(" ")}" fill="none" stroke="${col}" stroke-width="1.8"/>`;
+  g += line(R.e9, "#33ff99") + line(R.e21, "#ffb000");
+  D.T.marks.filter(m => m.i >= a).forEach(m => {
+    const k = m.i - a, c = h4[m.i];
+    g += m.t === "b" ? `<text x="${x(k)}" y="${y(c.low) + 16}" text-anchor="middle" fill="#33ff99" font-size="14">▲</text>`
+      : `<text x="${x(k)}" y="${y(c.high) - 5}" text-anchor="middle" fill="#ff4d4d" font-size="14">▼</text>`;
+  });
+  return g;
 }
 
-/* ---------- laden ---------- */
+/* ---------- acties ---------- */
+function bought() {
+  const v = parseFloat(String(document.getElementById("buyPx").value).replace(",", "."));
+  if (!(v > 0)) { alert("Vul je aankoopprijs in."); return; }
+  savePos({ price: v, date: new Date().toISOString() }); render();
+}
+function sold() { if (confirm("Positie wissen? De terminal gaat dan weer kijken naar een koopmoment.")) { savePos(null); render(); } }
+
 async function load() {
   const err = document.getElementById("error"); err.style.display = "none";
   try {
-    const [d, px] = await Promise.all([getCandles(), livePrice()]);
-    S.candles = d.c; S.src = d.src; S.price = px;
-    if (px) document.getElementById("price").textContent = "€" + fmt(px);
-    S.res = analyse(S.candles); render();
-    document.getElementById("meta").textContent = `bron: ${S.src} · ${S.candles.length} dagen · update ${new Date().toLocaleTimeString("nl-NL")}`;
-  } catch (e) {
-    err.style.display = "block"; err.textContent = `Kon de dagcandles niet ophalen of verwerken: ${e.message}. Tik op ververs.`;
-  }
+    const [a, b] = await Promise.all([candles("4h", 1440, H4), candles("1d", 400, DAY)]);
+    const R = build(a.closed, b.closed);
+    D = { h4: a.closed, d1: b.closed, R, live: a.live, src: a.src };
+    D.T = track(a.closed, R);
+    render();
+  } catch (e) { err.style.display = "block"; err.textContent = "Kon geen koersdata ophalen: " + e.message + ". Probeer het straks opnieuw."; }
 }
-function saveSet() {
-  const f = parseFloat(document.getElementById("sFee").value), b = parseFloat(document.getElementById("sBorrow").value);
-  if (!(f >= 0) || !(b >= 0)) { alert("Controleer de ingevulde waarden."); return; }
-  SET = { fee: f, borrow: b }; try { localStorage.setItem(SET_KEY, JSON.stringify(SET)); } catch (e) {}
-  if (S.candles) { S.res = analyse(S.candles); render(); }
-}
-document.getElementById("sFee").value = SET.fee; document.getElementById("sBorrow").value = SET.borrow;
-load(); setInterval(load, 15 * 60000);
+load(); setInterval(load, 5 * 60000);
 </script>
 </body>
 </html>
